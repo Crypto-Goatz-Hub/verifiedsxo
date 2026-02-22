@@ -18,18 +18,32 @@ export default function Home() {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
-    setTimeout(() => {
-      setResults({
-        query,
-        verified: true,
-        sources: [
-          { name: 'NotebookLM', confidence: 0.94 },
-          { name: 'Academic Sources', confidence: 0.89 },
-        ],
-        timestamp: new Date().toISOString()
+    setResults(null);
+    try {
+      const res = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: query, vertical: 'marketing', include_sources: true })
       });
+      const data = await res.json();
+      if (!res.ok) {
+        setResults({ query, verified: false, answer: data.error || 'Request failed', sources: [], confidence: 0 });
+      } else {
+        setResults({
+          query,
+          verified: data.confidence > 0.5,
+          answer: data.answer,
+          sources: data.sources || [],
+          confidence: data.confidence,
+          demo: data.demo || false,
+          timestamp: data.timestamp
+        });
+      }
+    } catch (err) {
+      setResults({ query, verified: false, answer: 'Unable to reach the verification engine. Please try again.', sources: [], confidence: 0 });
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -89,17 +103,32 @@ export default function Home() {
                 <div>
                   <h3 className="text-xl font-semibold text-white">{results.verified ? 'Verified' : 'Unverified'}</h3>
                   <p className="text-gray-400 text-sm">"{results.query}"</p>
+                  {results.confidence > 0 && (
+                    <p className="text-green-400 text-xs font-mono mt-1">{(results.confidence * 100).toFixed(0)}% confidence</p>
+                  )}
                 </div>
               </div>
-              <div className="space-y-3">
-                <h4 className="text-white font-medium">Sources:</h4>
-                {results.sources.map((source, i) => (
-                  <div key={i} className="flex justify-between items-center bg-white/5 rounded-lg px-4 py-3">
-                    <span className="text-gray-300">{source.name}</span>
-                    <span className="text-green-400 font-mono">{(source.confidence * 100).toFixed(0)}% confidence</span>
-                  </div>
-                ))}
-              </div>
+              {results.answer && (
+                <div className="mb-6">
+                  <div className="text-gray-200 whitespace-pre-wrap leading-relaxed text-sm">{results.answer}</div>
+                </div>
+              )}
+              {results.demo && (
+                <div className="mb-4 px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-yellow-400 text-xs">Demo Mode - Set ANTHROPIC_API_KEY for live results</p>
+                </div>
+              )}
+              {results.sources.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-white font-medium text-sm">Sources:</h4>
+                  {results.sources.map((source, i) => (
+                    <div key={i} className="flex justify-between items-center bg-white/5 rounded-lg px-4 py-3">
+                      <span className="text-gray-300 text-sm">{source.title || source.name}</span>
+                      <span className="text-gray-500 text-xs">{source.type}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
