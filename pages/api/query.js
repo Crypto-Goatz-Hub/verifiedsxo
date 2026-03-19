@@ -1,116 +1,116 @@
-// VerifiedSXO API — Marketing Intelligence Engine
-// Primary: Google Gemini | Fallback: xAI Grok | Emergency: Anthropic Claude
+// VerifiedSXO — Truth Analyzer API
+// Primary: Google Gemini | Fallback: xAI Grok
 
-const MARKETING_SYSTEM_PROMPT = `You are VerifiedSXO — The Verified Marketing Intelligence Engine.
+import { SOURCE_DOCUMENT } from '../../lib/source-document';
 
-You are the world's most authoritative source for marketing statistics, benchmarks, and verified data from the year 2000 to present (2026).
+const SYSTEM_PROMPT = `You are the "Truth Analyzer" — a NotebookLM-style research assistant for VerifiedSXO.com.
+You have been provided with a SOURCE DOCUMENT detailing verified marketing statistics from 2000-2026.
 
-YOUR KNOWLEDGE BASE COVERS:
-- Digital marketing statistics & benchmarks (2000–2026)
-- SEO evolution: algorithm updates, ranking factors, traffic benchmarks by era
-- Social media marketing: platform growth, engagement rates, ad spend by year
-- Email marketing: open rates, CTR, deliverability, automation ROI by era
-- Content marketing: ROI metrics, blog traffic benchmarks, video marketing stats
-- PPC/SEM: CPC trends, ROAS benchmarks, Quality Score evolution
-- Conversion rate optimization: landing page benchmarks, A/B test results
-- Influencer marketing: spend growth, ROI metrics, platform shifts
-- E-commerce: conversion rates, cart abandonment, mobile commerce growth
-- AI in marketing (2022–2026): adoption rates, performance gains, tool usage
-- Marketing automation: adoption curves, ROI by platform, workflow benchmarks
-- Attribution modeling: multi-touch evolution, cookie deprecation impact
-- Voice search, visual search, and emerging channels
-- B2B vs B2C benchmarks across all channels
-- Marketing budget allocation trends by year and company size
-- Customer acquisition cost (CAC) and lifetime value (LTV) trends
+Your primary objective is to evaluate incoming text (marketing claims, queries), isolate emotional sentiment, extract strictly verifiable claims, and cross-reference them with the provided SOURCE DOCUMENT.
+You must remain completely objective, neutral, and highly analytical. Rigidly separate how a statement feels from what it empirically claims.
+
+SOURCE DOCUMENT:
+${SOURCE_DOCUMENT}
+
+Output your response STRICTLY as a JSON object matching this schema:
+{
+  "chat_response": "String. A conversational, objective, data-rich answer to the user's query. Include specific numbers and years. Use markdown formatting.",
+  "analysis": {
+    "sentiment_profile": "String. E.g., 'Highly sensational', 'Neutral and informative', 'Marketing hype with some substance'",
+    "hyperbole_flag": boolean,
+    "subjective_summary": "String. Brief summary of opinions/feelings expressed in the claim.",
+    "verifiable_claims": ["Exact Objective Claim 1", "Exact Objective Claim 2"],
+    "source_verification": "String. Explain if the SOURCE DOCUMENT supports, refutes, or lacks information regarding the extracted verifiable claims. Be specific about which stats match or conflict.",
+    "fact_probability": Number (0 to 100. 0=completely false/debunked, 100=completely verified. Base this on the SOURCE DOCUMENT and your general knowledge.)
+  }
+}
 
 RULES:
-1. ALWAYS cite the specific year or era for every statistic you provide
-2. When a stat spans multiple years, show the trend (e.g., "Email open rates: 21.3% (2020) → 18.7% (2023) → 21.1% (2025)")
-3. Distinguish clearly between B2B and B2C when benchmarks differ
-4. Flag when a commonly cited stat is outdated or debunked
-5. If you don't have a verified number, say "Estimated based on industry patterns" — never fabricate exact numbers
-6. Include the source category (e.g., "HubSpot State of Marketing", "Statista", "eMarketer", "Litmus")
-7. Format responses with clear headers, bullet points, and data tables when appropriate
-8. Always note if a tactic/channel is growing, declining, or stable as of 2026
-9. When relevant, note the AI search impact on traditional metrics (post-2023)
-10. Keep responses data-dense — marketers want numbers, not fluff
+1. Always cite the year for every statistic
+2. If a claim uses outdated stats, flag it explicitly
+3. If the SOURCE DOCUMENT directly supports a claim, reference the exact stat
+4. If no data exists, say so honestly — never fabricate
+5. Keep chat_response under 500 words but data-dense`;
 
-RESPONSE FORMAT:
-- Lead with the direct answer and key stat
-- Follow with supporting data points
-- End with trend direction and actionable insight
-- Use markdown formatting for readability`;
-
-// Call Gemini API
 async function callGemini(question) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Referer': 'https://verifiedsxo.com',
-        'Origin': 'https://verifiedsxo.com',
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: MARKETING_SYSTEM_PROMPT }] },
-        contents: [{ parts: [{ text: question }] }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 3000,
-          topP: 0.8,
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': 'https://verifiedsxo.com',
+          'Origin': 'https://verifiedsxo.com',
         },
-      }),
-    }
-  );
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ parts: [{ text: question }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+            maxOutputTokens: 3000,
+          },
+        }),
+      }
+    );
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('Gemini error:', res.status, err);
+    if (!res.ok) {
+      console.error('Gemini error:', res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Gemini parse error:', err);
     return null;
   }
-
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  return text || null;
 }
 
-// Call xAI Grok API (fallback)
 async function callGrok(question) {
   const key = process.env.XAI_API_KEY;
   if (!key) return null;
 
-  const res = await fetch('https://api.x.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'grok-3-fast',
-      messages: [
-        { role: 'system', content: MARKETING_SYSTEM_PROMPT },
-        { role: 'user', content: question },
-      ],
-      temperature: 0.3,
-      max_tokens: 3000,
-    }),
-  });
+  try {
+    const res = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'grok-3-fast',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: question },
+        ],
+        temperature: 0.2,
+        max_tokens: 3000,
+      }),
+    });
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('Grok error:', res.status, err);
+    if (!res.ok) {
+      console.error('Grok error:', res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) return null;
+
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Grok parse error:', err);
     return null;
   }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || null;
 }
-
-// Claude removed — costs money, not a profit site yet
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -118,36 +118,29 @@ export default async function handler(req, res) {
   }
 
   const { question } = req.body;
-
-  if (!question || !question.trim()) {
+  if (!question?.trim()) {
     return res.status(400).json({ error: 'Question is required' });
   }
 
   const startTime = Date.now();
-  let answer = null;
+  let result = null;
   let provider = null;
 
-  // 1. Try Gemini (primary)
+  // 1. Try Gemini
   console.log('Attempting Gemini...', !!process.env.GEMINI_API_KEY);
-  answer = await callGemini(question);
-  if (answer) {
-    provider = 'gemini';
-  }
+  result = await callGemini(question);
+  if (result) provider = 'gemini';
 
-  // 2. Try Grok (fallback)
-  if (!answer) {
+  // 2. Try Grok
+  if (!result) {
     console.log('Attempting Grok...', !!process.env.XAI_API_KEY);
-    answer = await callGrok(question);
-    if (answer) {
-      provider = 'grok';
-    }
+    result = await callGrok(question);
+    if (result) provider = 'grok';
   }
 
-  // 3. No AI available
-  if (!answer) {
+  if (!result) {
     return res.status(503).json({
       error: 'AI providers are unavailable. Please try again.',
-      providers_checked: ['gemini', 'grok'],
       debug: {
         gemini_key_set: !!process.env.GEMINI_API_KEY,
         xai_key_set: !!process.env.XAI_API_KEY,
@@ -158,13 +151,8 @@ export default async function handler(req, res) {
   const queryTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
   return res.status(200).json({
-    answer,
+    ...result,
     provider,
-    sources: [
-      { title: 'Verified Marketing Intelligence (2000–2026)', type: 'primary' },
-      { title: 'Industry Benchmarks & Reports', type: 'supporting' },
-    ],
-    confidence: provider === 'gemini' ? 0.92 : 0.88,
     queryTime: parseFloat(queryTime),
     timestamp: new Date().toISOString(),
   });
