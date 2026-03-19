@@ -3,474 +3,344 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import Head from 'next/head';
 import {
   ShieldCheck, Search, AlertTriangle, CheckCircle, Info, Send,
-  FileText, Database, Activity, ChevronRight, Loader2, Copy,
-  ThumbsUp, ThumbsDown, Globe, X, ExternalLink, Lightbulb, Zap
+  FileText, Activity, ChevronRight, Loader2, Copy,
+  ThumbsUp, ThumbsDown, X, Zap, TrendingUp, BarChart3, Mail,
+  Globe, Brain, Users
 } from 'lucide-react';
-import { SOURCE_DOCUMENT } from '../lib/source-document';
 
 const SAMPLE_CLAIMS = [
   "Email marketing has an ROI of $36 for every $1 spent",
   "SEO is dead — social media is the only way to get traffic now",
   "Short-form video has 41% higher ROI than long-form content",
-  "AI will replace 50% of marketing jobs by 2025",
-  "Facebook organic reach is still around 16% for business pages",
   "80% of B2B leads come from LinkedIn",
+  "Facebook organic reach is still around 16% for business pages",
+  "AI will replace 50% of marketing jobs by 2025",
   "Blog posts over 2000 words rank better on Google",
   "TikTok has surpassed Google as a search engine for Gen Z",
 ];
 
+const MARKETING_ERAS = [
+  { era: '2000–2005', name: 'The Search Era', desc: 'Google rises, SEO is born, email marketing explodes' },
+  { era: '2006–2012', name: 'The Social Era', desc: 'Facebook, Twitter, YouTube reshape marketing forever' },
+  { era: '2013–2019', name: 'The Content Era', desc: 'Content is king, influencers emerge, mobile-first' },
+  { era: '2020–2023', name: 'The Automation Era', desc: 'Pandemic shift, martech explosion, privacy wars' },
+  { era: '2024–2026', name: 'The AI Era', desc: 'AI search, generative content, SXO replaces SEO' },
+];
+
 export default function Home() {
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState('knowledge');
-  const [verifiedClaims, setVerifiedClaims] = useState([]);
-  const [selectedFact, setSelectedFact] = useState(null);
-  const [messages, setMessages] = useState([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: "Welcome to the VerifiedSXO Workspace. I am the Truth Analyzer — paste any marketing claim and I'll analyze it against 25 years of verified data, assign a Fact Probability score, and generate a Verified Seal you can share."
-    }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q || loading) return;
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const currentInput = input;
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: currentInput }]);
-    setInput('');
-    setIsLoading(true);
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
     try {
       const res = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: currentInput }),
+        body: JSON.stringify({ question: q }),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Request failed');
-      }
-
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
 
-      const newClaim = {
-        id: Date.now().toString(),
-        original_text: currentInput,
-        ai_score: data.analysis?.fact_probability || 50,
-        community_score: data.analysis?.fact_probability || 50,
-        upvotes: 0,
-        downvotes: 0,
-        analysis: data.analysis,
-        provider: data.provider,
-        timestamp: data.timestamp,
-      };
-
-      setVerifiedClaims(prev => [newClaim, ...prev]);
-
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.chat_response,
-        analysis: data.analysis,
-        provider: data.provider,
-        queryTime: data.queryTime,
-        claimText: currentInput,
-        claimId: newClaim.id,
-      }]);
-    } catch (error) {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `Analysis error: ${error.message}. The AI providers may be temporarily unavailable — please try again.`
-      }]);
+      setResult({ ...data, claimText: q });
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleVote = (claimId, isUpvote) => {
-    setVerifiedClaims(prev => prev.map(c => {
-      if (c.id !== claimId) return c;
-      const newUp = isUpvote ? c.upvotes + 1 : c.upvotes;
-      const newDown = !isUpvote ? c.downvotes + 1 : c.downvotes;
-      const total = newUp + newDown;
-      return {
-        ...c,
-        upvotes: newUp,
-        downvotes: newDown,
-        community_score: total > 0 ? Math.round((newUp / total) * 100) : c.ai_score,
-      };
-    }));
-  };
-
-  const copySeal = async (claimText, score, claimId) => {
-    const color = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+  const copySeal = async (claimText, score) => {
     const label = score >= 70 ? 'VERIFIED' : score >= 40 ? 'PARTIALLY VERIFIED' : 'UNVERIFIED';
-    const link = `https://verifiedsxo.com/fact/${claimId || 'demo'}`;
-
-    const text = `🛡️ VerifiedSXO Fact Check\nClaim: "${claimText.substring(0, 120)}"\nProbability: ${score}% — ${label}\nFull Analysis: ${link}`;
-
+    const text = `🛡️ VerifiedSXO Fact Check\nClaim: "${claimText.substring(0, 120)}"\nProbability: ${score}% — ${label}\nVerify at: https://verifiedsxo.com`;
     try {
       await navigator.clipboard.writeText(text);
-      alert('Fact Seal copied to clipboard!');
     } catch {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      alert('Copied!');
     }
   };
 
-  const scoreColor = (s) => s >= 70 ? 'text-emerald-500' : s >= 40 ? 'text-amber-500' : 'text-red-500';
-  const scoreBg = (s) => s >= 70 ? 'bg-emerald-500/10 border-emerald-500/30' : s >= 40 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-red-500/10 border-red-500/30';
-  const scoreRing = (s) => s >= 70 ? 'border-emerald-500' : s >= 40 ? 'border-amber-500' : 'border-red-500';
+  const scoreColor = (s) => s >= 70 ? 'text-emerald-400' : s >= 40 ? 'text-amber-400' : 'text-red-400';
+  const scoreRing = (s) => s >= 70 ? 'border-emerald-500 shadow-emerald-500/20' : s >= 40 ? 'border-amber-500 shadow-amber-500/20' : 'border-red-500 shadow-red-500/20';
+  const scoreBadgeBg = (s) => s >= 70 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : s >= 40 ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-red-500/10 border-red-500/30 text-red-400';
+  const scoreLabel = (s) => s >= 70 ? 'VERIFIED' : s >= 40 ? 'PARTIALLY VERIFIED' : 'UNVERIFIED';
 
   return (
     <>
       <Head>
-        <title>VerifiedSXO — Truth Analyzer | Marketing Fact Verification</title>
-        <meta name="description" content="Verify marketing claims instantly with AI-powered fact-checking against 25 years of verified data. Generate shareable Fact Seals." />
+        <title>VerifiedSXO — Marketing Intelligence Engine | 25 Years of Verified Data</title>
+        <meta name="description" content="Verify marketing claims instantly with AI-powered fact-checking against 25 years of verified data from 2000 to 2026." />
+        <meta name="keywords" content="marketing statistics, marketing benchmarks, fact check marketing, verified marketing data, SEO stats, email marketing rates" />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="flex h-screen bg-[#0a0a0f] text-white overflow-hidden">
-
-        {/* LEFT PANEL */}
-        <div className="w-[380px] border-r border-white/10 flex flex-col flex-shrink-0">
-          {/* Panel Header */}
-          <div className="p-4 border-b border-white/10 bg-[#0f0f18]">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-green-600 rounded-lg flex items-center justify-center">
-                  <ShieldCheck size={16} className="text-white" />
-                </div>
-                <span className="font-bold text-sm">VerifiedSXO</span>
+      <div className="min-h-screen bg-[#0a0a0f] text-white">
+        {/* Header */}
+        <header className="border-b border-white/10 backdrop-blur-sm sticky top-0 z-40 bg-[#0a0a0f]/80">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <ShieldCheck size={20} className="text-white" />
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-gray-500">Live</span>
+              <div>
+                <span className="text-xl font-bold">VerifiedSXO</span>
+                <span className="hidden sm:inline text-xs text-gray-500 ml-2">Marketing Intelligence Engine</span>
               </div>
             </div>
-            <div className="flex bg-white/5 p-1 rounded-lg">
-              <button
-                onClick={() => setActiveTab('knowledge')}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${activeTab === 'knowledge' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                <FileText size={12} /> Knowledge Base
-              </button>
-              <button
-                onClick={() => setActiveTab('database')}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${activeTab === 'database' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                <Database size={12} /> Verified Claims ({verifiedClaims.length})
-              </button>
+            <div className="flex items-center gap-4">
+              {status !== 'loading' && !session ? (
+                <button onClick={() => signIn('linkedin')} className="px-4 py-2 bg-[#0077B5] hover:bg-[#005885] text-white text-sm rounded-lg transition flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                  Sign in
+                </button>
+              ) : session ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 text-sm hidden sm:inline">{session.user?.name}</span>
+                  <button onClick={() => signOut()} className="px-3 py-1.5 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition">Sign Out</button>
+                </div>
+              ) : null}
             </div>
           </div>
+        </header>
 
-          {/* Panel Content */}
-          <div className="flex-1 overflow-y-auto">
-            {activeTab === 'knowledge' ? (
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-3 text-gray-500 text-xs">
-                  <FileText size={12} />
-                  <span className="font-medium">Marketing_Stats_2000-2026.md</span>
-                </div>
-                <div className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap font-mono">
-                  {SOURCE_DOCUMENT}
+        {/* Hero */}
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+          <div className="max-w-4xl mx-auto px-4 pt-20 pb-12 text-center relative">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Powered by Gemini AI + NotebookLM
+            </div>
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
+              25 Years of Marketing.
+              <br />
+              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Verified.</span>
+            </h1>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-12">
+              Paste any marketing claim. Get it fact-checked against verified statistics from 2000 to 2026 — powered by AI, not hallucinations.
+            </p>
+
+            {/* Big Search Box */}
+            <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-8">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-2xl blur-xl" />
+                <div className="relative bg-white/[0.05] border border-white/10 rounded-2xl p-2 backdrop-blur-sm">
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Paste a marketing claim to fact-check..."
+                      className="flex-1 px-6 py-5 bg-transparent text-white text-lg placeholder-gray-500 focus:outline-none"
+                      disabled={loading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading || !query.trim()}
+                      className="px-8 py-5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-lg rounded-xl hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 size={20} className="animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck size={20} />
+                          Verify
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="p-3 space-y-3">
-                {verifiedClaims.length === 0 ? (
-                  <div className="text-center py-12 text-gray-600">
-                    <Database size={28} className="mx-auto mb-3 opacity-40" />
-                    <p className="text-sm">No claims analyzed yet.</p>
-                    <p className="text-xs mt-1">Paste a marketing claim to get started.</p>
-                  </div>
-                ) : (
-                  verifiedClaims.map(claim => (
-                    <div
-                      key={claim.id}
-                      className="bg-white/[0.03] border border-white/10 rounded-xl p-3 hover:border-emerald-500/30 transition cursor-pointer"
-                      onClick={() => setSelectedFact(claim)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className={`px-2 py-0.5 rounded text-xs font-bold border ${scoreBg(claim.community_score)} ${scoreColor(claim.community_score)}`}>
-                          {claim.community_score}% Verified
-                        </div>
-                        <div className="flex gap-2 text-gray-500 text-xs">
-                          <button onClick={(e) => { e.stopPropagation(); handleVote(claim.id, true); }} className="hover:text-emerald-400 flex items-center gap-0.5">
-                            <ThumbsUp size={12} /> {claim.upvotes}
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); handleVote(claim.id, false); }} className="hover:text-red-400 flex items-center gap-0.5">
-                            <ThumbsDown size={12} /> {claim.downvotes}
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-400 line-clamp-2 italic">&quot;{claim.original_text}&quot;</p>
-                      <div className="flex items-center text-xs text-emerald-400/60 mt-2 font-medium">
-                        <Search size={10} className="mr-1" /> View Report
-                      </div>
-                    </div>
-                  ))
-                )}
+            </form>
+
+            {/* Error */}
+            {error && (
+              <div className="max-w-3xl mx-auto mb-6">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">
+                  {error}
+                </div>
               </div>
             )}
-          </div>
 
-          {/* Auth */}
-          <div className="p-3 border-t border-white/10 bg-[#0f0f18]">
-            {status !== 'loading' && !session ? (
-              <button onClick={() => signIn('linkedin')} className="w-full px-3 py-2 bg-[#0077B5] hover:bg-[#005885] text-white text-xs rounded-lg transition flex items-center justify-center gap-2">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                Sign in with LinkedIn
-              </button>
-            ) : session ? (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 truncate">{session.user?.name || session.user?.email}</span>
-                <button onClick={() => signOut()} className="text-gray-600 hover:text-white transition">Sign Out</button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* RIGHT PANEL: Truth Analyzer */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Chat Header */}
-          <div className="px-6 py-4 border-b border-white/10 bg-[#0f0f18] flex items-center justify-between">
-            <div>
-              <h1 className="font-bold text-base">Truth Analyzer Workspace</h1>
-              <p className="text-xs text-gray-500">Analyze marketing claims & generate Verified Fact Seals</p>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <Zap size={12} className="text-emerald-400" />
-              <span>Gemini + Grok</span>
+            {/* Sample Claims */}
+            <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+              {SAMPLE_CLAIMS.slice(0, 4).map((claim, i) => (
+                <button
+                  key={i}
+                  onClick={() => setQuery(claim)}
+                  className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-500 hover:text-white transition truncate max-w-[280px]"
+                >
+                  {claim}
+                </button>
+              ))}
             </div>
           </div>
+        </section>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-5">
-            {messages.map(msg => (
-              <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                {msg.role === 'user' ? (
-                  <div className="bg-white/10 px-4 py-3 rounded-2xl rounded-tr-sm max-w-[80%]">
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                ) : (
-                  <div className="max-w-[90%] space-y-3 w-full">
-                    <div className="bg-white/[0.03] border border-white/10 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <ShieldCheck size={14} className="text-emerald-400" />
-                      </div>
-                      <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap flex-1 min-w-0">{msg.content}</div>
-                    </div>
-
-                    {/* Fact Seal Card */}
-                    {msg.analysis && (
-                      <div className="ml-10 bg-white/[0.03] border border-white/10 rounded-xl overflow-hidden">
-                        <div className="p-5 flex items-center gap-5 border-b border-white/5">
-                          <div className={`w-20 h-20 rounded-full border-4 flex flex-col items-center justify-center bg-white/5 flex-shrink-0 ${scoreRing(msg.analysis.fact_probability)}`}>
-                            <span className={`text-2xl font-black ${scoreColor(msg.analysis.fact_probability)}`}>{msg.analysis.fact_probability}%</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Verified Fact Seal</p>
-                            <p className="text-xs text-gray-400 italic truncate mb-3">&quot;{msg.claimText}&quot;</p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => copySeal(msg.claimText, msg.analysis.fact_probability, msg.claimId)}
-                                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-                              >
-                                <Copy size={12} /> Copy Seal
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const c = verifiedClaims.find(vc => vc.id === msg.claimId);
-                                  if (c) setSelectedFact(c);
-                                }}
-                                className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-                              >
-                                <ExternalLink size={12} /> Full Report
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Condensed analysis */}
-                        <div className="p-4 grid grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <span className="text-gray-600 font-medium block mb-0.5">Sentiment</span>
-                            <span className="text-gray-400">{msg.analysis.sentiment_profile}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600 font-medium block mb-0.5">Subjectivity</span>
-                            <span className="text-gray-400">{msg.analysis.subjective_summary}</span>
-                          </div>
-                          {msg.analysis.hyperbole_flag && (
-                            <div className="col-span-2">
-                              <span className="inline-flex items-center gap-1 text-amber-400 bg-amber-500/10 px-2 py-1 rounded text-[10px] font-medium">
-                                <AlertTriangle size={10} /> Hyperbolic Language Detected
-                              </span>
-                            </div>
-                          )}
-                          <div className="col-span-2 bg-white/[0.02] p-3 rounded-lg border border-white/5">
-                            <span className="text-gray-600 font-medium block mb-1">Source Verification</span>
-                            <span className="text-gray-400 leading-relaxed">{msg.analysis.source_verification}</span>
-                          </div>
-                        </div>
-                        {msg.provider && (
-                          <div className="px-4 py-2 border-t border-white/5 text-[10px] text-gray-600">
-                            Analyzed by {msg.provider === 'gemini' ? 'Google Gemini' : 'xAI Grok'} in {msg.queryTime}s
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+        {/* Marketing Eras */}
+        <section className="max-w-5xl mx-auto px-4 py-20">
+          <h2 className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wider mb-10">
+            Our Knowledge Spans 5 Marketing Eras
+          </h2>
+          <div className="grid sm:grid-cols-5 gap-3">
+            {MARKETING_ERAS.map((era, i) => (
+              <div key={i} className="bg-white/[0.03] border border-white/10 rounded-xl p-4 hover:border-emerald-500/30 transition group">
+                <div className="text-xs font-mono text-emerald-400/60 mb-2">{era.era}</div>
+                <div className="text-sm font-semibold text-white mb-1 group-hover:text-emerald-400 transition">{era.name}</div>
+                <div className="text-xs text-gray-500 leading-relaxed">{era.desc}</div>
               </div>
             ))}
-            {isLoading && (
-              <div className="flex items-center gap-2 text-gray-500 ml-10">
-                <Loader2 size={14} className="animate-spin" />
-                <span className="text-xs">Analyzing claim against knowledge base...</span>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
           </div>
+        </section>
 
-          {/* Sample Claims */}
-          {messages.length <= 1 && (
-            <div className="px-6 pb-3">
-              <p className="text-xs text-gray-600 mb-2">Try a sample claim:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {SAMPLE_CLAIMS.slice(0, 4).map((claim, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setInput(claim)}
-                    className="text-[11px] px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-500 hover:text-white transition truncate max-w-[280px]"
-                  >
-                    {claim}
-                  </button>
-                ))}
+        {/* Stats */}
+        <section className="max-w-5xl mx-auto px-4 pb-20">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { icon: <BarChart3 size={20} />, stat: '25+', label: 'Years of Data', sub: '2000–2026' },
+              { icon: <Globe size={20} />, stat: '500+', label: 'Data Sources', sub: 'Verified reports' },
+              { icon: <TrendingUp size={20} />, stat: '50+', label: 'Channels Tracked', sub: 'SEO to AI search' },
+              { icon: <Brain size={20} />, stat: '< 4s', label: 'Fact Check Speed', sub: 'Gemini AI powered' },
+            ].map((item, i) => (
+              <div key={i} className="text-center p-6 bg-white/[0.03] rounded-xl border border-white/5 hover:border-emerald-500/20 transition">
+                <div className="text-emerald-400/40 mx-auto mb-3 flex justify-center">{item.icon}</div>
+                <div className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">{item.stat}</div>
+                <div className="text-sm text-white mt-1">{item.label}</div>
+                <div className="text-xs text-gray-600 mt-0.5">{item.sub}</div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
+        </section>
 
-          {/* Input */}
-          <div className="p-4 border-t border-white/10 bg-[#0f0f18]">
-            <div className="relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Paste a marketing claim to fact-check..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition resize-none text-sm placeholder-gray-600"
-                rows={2}
-              />
+        {/* More Sample Claims */}
+        <section className="max-w-4xl mx-auto px-4 pb-20">
+          <h2 className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wider mb-8">
+            Try These Marketing Claims
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {SAMPLE_CLAIMS.map((claim, i) => (
               <button
-                onClick={handleSend}
-                disabled={isLoading || !input.trim()}
-                className="absolute right-3 bottom-3 p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg disabled:bg-gray-700 disabled:cursor-not-allowed transition"
+                key={i}
+                onClick={() => { setQuery(claim); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="text-left px-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-emerald-500/30 rounded-xl text-sm text-gray-400 hover:text-white transition group"
               >
-                <Send size={16} />
+                <span className="text-emerald-400/60 group-hover:text-emerald-400 mr-2">→</span>
+                {claim}
               </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-white/5">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">Part of the</span>
+                <a href="https://rocketopp.com" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-gray-400 hover:text-emerald-400 transition">RocketOpp Ecosystem</a>
+                <span className="text-gray-800">|</span>
+                <a href="https://sxowebsite.com" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-emerald-400 transition">SXO</a>
+                <a href="https://0nmcp.com" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-emerald-400 transition">0nMCP</a>
+              </div>
+              <div className="text-xs text-gray-700">&copy; {new Date().getFullYear()} VerifiedSXO by RocketOpp LLC</div>
             </div>
           </div>
-        </div>
+        </footer>
 
-        {/* FACT DETAIL MODAL */}
-        {selectedFact && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6">
-            <div className="bg-[#12121a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-              {/* Modal Header */}
-              <div className={`p-6 border-b border-white/10 flex justify-between items-start ${scoreBg(selectedFact.community_score)}`}>
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full border-4 flex items-center justify-center bg-[#0a0a0f] ${scoreRing(selectedFact.community_score)}`}>
-                    <span className={`text-xl font-black ${scoreColor(selectedFact.community_score)}`}>{selectedFact.community_score}%</span>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold">Fact Report</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      AI Score: {selectedFact.ai_score}% | Community: {selectedFact.community_score}%
-                    </p>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedFact(null)} className="p-1.5 hover:bg-white/10 rounded-lg transition">
-                  <X size={18} className="text-gray-400" />
+        {/* ============================================ */}
+        {/* RESULT MODAL */}
+        {/* ============================================ */}
+        {result && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 sm:p-6" onClick={() => setResult(null)}>
+            <div className="bg-[#12121a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+
+              {/* Modal Header — Score */}
+              <div className="p-8 text-center border-b border-white/10 relative">
+                <button onClick={() => setResult(null)} className="absolute top-4 right-4 p-1.5 hover:bg-white/10 rounded-lg transition">
+                  <X size={18} className="text-gray-500" />
                 </button>
+
+                {/* Score Ring */}
+                <div className={`w-28 h-28 mx-auto rounded-full border-4 flex flex-col items-center justify-center shadow-lg ${scoreRing(result.analysis?.fact_probability)}`}>
+                  <span className={`text-4xl font-black ${scoreColor(result.analysis?.fact_probability)}`}>
+                    {result.analysis?.fact_probability}%
+                  </span>
+                </div>
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border mt-4 ${scoreBadgeBg(result.analysis?.fact_probability)}`}>
+                  <ShieldCheck size={12} />
+                  {scoreLabel(result.analysis?.fact_probability)}
+                </div>
+                <p className="text-sm text-gray-400 italic mt-3 max-w-md mx-auto">&quot;{result.claimText}&quot;</p>
+                <p className="text-[10px] text-gray-600 mt-2">
+                  Analyzed by {result.provider === 'gemini' ? 'Google Gemini' : 'xAI Grok'} in {result.queryTime}s
+                </p>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              {/* Modal Body — Analysis */}
+              <div className="p-6 overflow-y-auto flex-1 space-y-5">
+                {/* Chat Response */}
                 <div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Claim Under Review</p>
-                  <p className="text-sm text-gray-300 italic border-l-2 border-gray-700 pl-3">&quot;{selectedFact.original_text}&quot;</p>
+                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{result.chat_response}</p>
                 </div>
 
-                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium mb-0.5">Is this factually accurate?</p>
-                    <p className="text-xs text-gray-500">Your votes adjust the community score.</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleVote(selectedFact.id, true)} className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition">
-                      <ThumbsUp size={14} /> Verify ({selectedFact.upvotes})
-                    </button>
-                    <button onClick={() => handleVote(selectedFact.id, false)} className="flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-500/20 transition">
-                      <ThumbsDown size={14} /> Debunk ({selectedFact.downvotes})
-                    </button>
-                  </div>
-                </div>
-
-                {selectedFact.analysis && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                {/* Analysis Grid */}
+                {result.analysis && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="bg-white/[0.03] border border-white/10 p-3 rounded-lg">
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                        <div className="flex items-center gap-1.5 mb-1">
                           <Activity size={12} className="text-blue-400" />
-                          <span className="text-xs font-medium text-gray-400">Tone</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase">Sentiment</span>
                         </div>
-                        <p className="text-xs text-gray-300">{selectedFact.analysis.sentiment_profile}</p>
-                        {selectedFact.analysis.hyperbole_flag && (
-                          <span className="mt-2 inline-flex items-center gap-1 text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[10px]">
-                            <AlertTriangle size={10} /> Hyperbolic
-                          </span>
-                        )}
+                        <p className="text-xs text-gray-300">{result.analysis.sentiment_profile}</p>
                       </div>
                       <div className="bg-white/[0.03] border border-white/10 p-3 rounded-lg">
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                        <div className="flex items-center gap-1.5 mb-1">
                           <Info size={12} className="text-purple-400" />
-                          <span className="text-xs font-medium text-gray-400">Subjectivity</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase">Subjectivity</span>
                         </div>
-                        <p className="text-xs text-gray-300 italic">{selectedFact.analysis.subjective_summary}</p>
+                        <p className="text-xs text-gray-300">{result.analysis.subjective_summary}</p>
                       </div>
                     </div>
 
+                    {result.analysis.hyperbole_flag && (
+                      <div className="flex items-center gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg text-xs font-medium">
+                        <AlertTriangle size={14} />
+                        Hyperbolic language detected in this claim
+                      </div>
+                    )}
+
+                    {/* Source Verification */}
                     <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl">
-                      <p className="text-xs font-medium text-gray-400 mb-2 flex items-center gap-1.5">
-                        <Search size={12} /> Source Verification
+                      <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 flex items-center gap-1.5">
+                        <Search size={10} /> Source Verification
                       </p>
-                      <p className="text-xs text-gray-300 leading-relaxed">{selectedFact.analysis.source_verification}</p>
-                      {selectedFact.analysis.verifiable_claims?.length > 0 && (
+                      <p className="text-xs text-gray-400 leading-relaxed">{result.analysis.source_verification}</p>
+
+                      {result.analysis.verifiable_claims?.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-white/5">
                           <p className="text-[10px] font-bold text-gray-500 uppercase mb-1.5">Extracted Claims</p>
                           <ul className="space-y-1">
-                            {selectedFact.analysis.verifiable_claims.map((c, i) => (
+                            {result.analysis.verifiable_claims.map((c, i) => (
                               <li key={i} className="flex items-start gap-1.5 text-xs text-gray-400">
                                 <ChevronRight size={12} className="text-emerald-400 mt-0.5 flex-shrink-0" />
                                 {c}
@@ -480,9 +350,42 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
+
+              {/* Modal Footer — CTAs */}
+              <div className="p-5 border-t border-white/10 bg-[#0f0f18] flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => {
+                    copySeal(result.claimText, result.analysis?.fact_probability);
+                    const btn = document.getElementById('copy-btn');
+                    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy Fact Seal'; }, 2000); }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 px-4 py-3 rounded-xl text-sm font-medium transition"
+                >
+                  <Copy size={16} />
+                  <span id="copy-btn">Copy Fact Seal</span>
+                </button>
+                <button
+                  onClick={() => signIn('linkedin')}
+                  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:opacity-90 px-4 py-3 rounded-xl text-sm font-bold transition"
+                >
+                  <Users size={16} />
+                  Sign Up Now — It&apos;s Free
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-[#12121a] border border-white/10 rounded-2xl p-10 text-center max-w-sm">
+              <div className="w-16 h-16 mx-auto rounded-full border-4 border-emerald-500/30 border-t-emerald-400 animate-spin mb-6" />
+              <h3 className="text-lg font-bold mb-2">Analyzing Claim</h3>
+              <p className="text-sm text-gray-400">Cross-referencing against 25 years of verified marketing data...</p>
             </div>
           </div>
         )}
