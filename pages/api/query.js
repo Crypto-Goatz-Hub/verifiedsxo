@@ -110,34 +110,7 @@ async function callGrok(question) {
   return data.choices?.[0]?.message?.content || null;
 }
 
-// Call Anthropic Claude (emergency fallback)
-async function callClaude(question) {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 3000,
-      system: MARKETING_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: question }],
-    }),
-  });
-
-  if (!res.ok) {
-    console.error('Claude error:', res.status, await res.text());
-    return null;
-  }
-
-  const data = await res.json();
-  return data.content?.[0]?.text || null;
-}
+// Claude removed — costs money, not a profit site yet
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -155,6 +128,7 @@ export default async function handler(req, res) {
   let provider = null;
 
   // 1. Try Gemini (primary)
+  console.log('Attempting Gemini...', !!process.env.GEMINI_API_KEY);
   answer = await callGemini(question);
   if (answer) {
     provider = 'gemini';
@@ -162,25 +136,22 @@ export default async function handler(req, res) {
 
   // 2. Try Grok (fallback)
   if (!answer) {
+    console.log('Attempting Grok...', !!process.env.XAI_API_KEY);
     answer = await callGrok(question);
     if (answer) {
       provider = 'grok';
     }
   }
 
-  // 3. Try Claude (emergency)
-  if (!answer) {
-    answer = await callClaude(question);
-    if (answer) {
-      provider = 'claude';
-    }
-  }
-
-  // 4. No AI available
+  // 3. No AI available
   if (!answer) {
     return res.status(503).json({
-      error: 'All AI providers are unavailable. Please try again.',
-      providers_checked: ['gemini', 'grok', 'claude'],
+      error: 'AI providers are unavailable. Please try again.',
+      providers_checked: ['gemini', 'grok'],
+      debug: {
+        gemini_key_set: !!process.env.GEMINI_API_KEY,
+        xai_key_set: !!process.env.XAI_API_KEY,
+      },
     });
   }
 
@@ -193,7 +164,7 @@ export default async function handler(req, res) {
       { title: 'Verified Marketing Intelligence (2000–2026)', type: 'primary' },
       { title: 'Industry Benchmarks & Reports', type: 'supporting' },
     ],
-    confidence: provider === 'gemini' ? 0.92 : provider === 'grok' ? 0.88 : 0.85,
+    confidence: provider === 'gemini' ? 0.92 : 0.88,
     queryTime: parseFloat(queryTime),
     timestamp: new Date().toISOString(),
   });
