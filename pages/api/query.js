@@ -50,7 +50,11 @@ async function callGemini(question) {
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Referer': 'https://verifiedsxo.com',
+        'Origin': 'https://verifiedsxo.com',
+      },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: MARKETING_SYSTEM_PROMPT }] },
         contents: [{ parts: [{ text: question }] }],
