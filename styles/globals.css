@@ -8,8 +8,15 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  background: #0a0a0f;
+  color: #fafafa;
 }
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(16, 185, 129, 0.3);
+  color: white;
 }
