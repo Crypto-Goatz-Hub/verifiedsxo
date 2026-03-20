@@ -112,14 +112,74 @@ async function callGrok(question) {
   }
 }
 
+// ── Free daily search limit for anonymous users ──────────────
+
+import { getSupabaseAdmin } from '../../lib/supabase';
+
+async function checkDailyLimit(clientIp) {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { allowed: true }; // No DB = no limit
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Check how many searches this IP has done today
+  const { count } = await supabase
+    .from('verified_searches')
+    .select('*', { count: 'exact', head: true })
+    .eq('client_ip', clientIp)
+    .gte('created_at', `${today}T00:00:00Z`);
+
+  return { allowed: (count || 0) < 1, count: count || 0 };
+}
+
+async function logSearch(clientIp, question, provider) {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+
+  await supabase.from('verified_searches').insert({
+    client_ip: clientIp,
+    question: question.substring(0, 500),
+    provider,
+  }).then(() => {}).catch(() => {});
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { question } = req.body;
+  const { question, userId } = req.body;
   if (!question?.trim()) {
     return res.status(400).json({ error: 'Question is required' });
+  }
+
+  // Rate limiting by tier:
+  // Anonymous: 1/day | Logged in (free): 10/day | Pro ($8/mo): 100/day
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.headers['x-real-ip']
+    || req.socket?.remoteAddress
+    || 'unknown';
+
+  const isPro = req.body.plan === 'pro';
+  const dailyLimit = userId ? (isPro ? 100 : 10) : 1;
+  const limitKey = userId || clientIp;
+
+  const { allowed, count } = await checkDailyLimit(limitKey);
+  // Override the check with the correct limit
+  if ((count || 0) >= dailyLimit) {
+    const tierMsg = !userId
+      ? 'Sign up free for 10 daily searches, or go Pro ($8/mo) for 100!'
+      : isPro
+      ? 'You\'ve hit your Pro daily limit (100 searches). Resets at midnight.'
+      : 'Upgrade to Pro ($8/mo) for 100 daily searches!';
+
+    return res.status(429).json({
+      error: 'daily_limit',
+      message: tierMsg,
+      searchesUsed: count,
+      limit: dailyLimit,
+      tier: userId ? (isPro ? 'pro' : 'free') : 'anonymous',
+    });
   }
 
   const startTime = Date.now();
@@ -127,7 +187,6 @@ export default async function handler(req, res) {
   let provider = null;
 
   // 1. Try Gemini
-  console.log('Attempting Gemini...', !!process.env.GEMINI_API_KEY);
   result = await callGemini(question);
   if (result) provider = 'gemini';
 
@@ -149,6 +208,9 @@ export default async function handler(req, res) {
   }
 
   const queryTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+  // Log the search (non-blocking)
+  logSearch(clientIp, question, provider);
 
   return res.status(200).json({
     ...result,
