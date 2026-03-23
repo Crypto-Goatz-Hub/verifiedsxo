@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 
 // ============================================
 // VERIFIEDSXO - THE VERIFIED INTELLIGENCE ENGINE
@@ -8,25 +9,22 @@ const VERTICALS = [
   {
     id: 'marketing',
     name: 'Marketing',
-    icon: '📊',
+    icon: '\uD83D\uDCCA',
     description: '25 years of verified marketing intelligence',
-    color: '#ff6b35',
     available: true
   },
   {
     id: 'sales',
     name: 'Sales',
-    icon: '💼',
+    icon: '\uD83D\uDCBC',
     description: 'Sales strategies & benchmarks',
-    color: '#3b82f6',
     available: false
   },
   {
     id: 'finance',
     name: 'Finance',
-    icon: '💰',
+    icon: '\uD83D\uDCB0',
     description: 'Financial data & insights',
-    color: '#10b981',
     available: false
   }
 ];
@@ -38,6 +36,39 @@ const EXAMPLE_QUERIES = [
   "Best performing content formats on LinkedIn 2024",
   "SEO tactics that no longer work",
   "How has influencer marketing ROI changed?"
+];
+
+const FEATURES = [
+  {
+    icon: '\u26A1',
+    title: 'Instant Verification',
+    desc: 'Get verified answers in seconds, backed by 25 years of data.'
+  },
+  {
+    icon: '\uD83D\uDD0D',
+    title: 'Source Tracking',
+    desc: 'Every claim traced back to verified sources with confidence scores.'
+  },
+  {
+    icon: '\uD83D\uDCC8',
+    title: 'Trend Analysis',
+    desc: 'See how strategies evolved across eras with historical benchmarks.'
+  },
+  {
+    icon: '\uD83E\uDDE0',
+    title: 'AI-Powered',
+    desc: 'Advanced AI cross-references thousands of data points per query.'
+  },
+  {
+    icon: '\uD83C\uDF10',
+    title: 'Multi-Vertical',
+    desc: 'Marketing today. Sales, Finance, and more verticals coming soon.'
+  },
+  {
+    icon: '\uD83D\uDD12',
+    title: 'Verified Only',
+    desc: 'No hallucinations. No guesses. Only verified intelligence.'
+  }
 ];
 
 // ============================================
@@ -52,13 +83,8 @@ export default function VerifiedSXO() {
   const [activeVertical, setActiveVertical] = useState('marketing');
   const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef(null);
+  const queryRef = useRef(null);
 
-  // Focus input on load
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  // Handle query submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!query.trim() || isLoading) return;
@@ -69,8 +95,10 @@ export default function VerifiedSXO() {
     const queryText = query.trim();
     setQuery('');
 
+    // Scroll to query section
+    queryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     try {
-      // API call to backend
       const res = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,9 +110,8 @@ export default function VerifiedSXO() {
       });
 
       if (!res.ok) throw new Error('Query failed');
-
       const data = await res.json();
-      
+
       const result = {
         query: queryText,
         answer: data.answer,
@@ -96,7 +123,6 @@ export default function VerifiedSXO() {
 
       setResponse(result);
       setHistory(prev => [result, ...prev.slice(0, 49)]);
-
     } catch (error) {
       setResponse({
         query: queryText,
@@ -110,199 +136,312 @@ export default function VerifiedSXO() {
     }
   };
 
-  // Quick query from examples
   const handleExampleClick = (example) => {
     setQuery(example);
     inputRef.current?.focus();
   };
 
   return (
-    <div style={styles.container}>
-      {/* Background gradient */}
-      <div style={styles.bgGradient} />
-      
-      {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.logo}>
-          <span style={styles.logoIcon}>⚡</span>
-          <span style={styles.logoText}>VerifiedSXO</span>
-        </div>
-        <div style={styles.headerRight}>
-          <button 
-            style={styles.historyBtn}
+    <div className="landing-page">
+      {/* Background effects */}
+      <div className="grid-bg" />
+      <div className="orb-1" />
+      <div className="orb-2" />
+      <div className="orb-3" />
+
+      {/* Navigation */}
+      <nav className="nav">
+        <a href="/" className="nav-logo">
+          <span className="nav-logo-icon">{'\u26A1'}</span>
+          <span className="nav-logo-text">VerifiedSXO</span>
+        </a>
+        <div className="nav-links">
+          <button
+            className="nav-link nav-link-ghost"
             onClick={() => setShowHistory(!showHistory)}
           >
-            📜 History ({history.length})
+            History ({history.length})
           </button>
+          <Link href="/login" className="nav-link nav-link-ghost">
+            Sign In
+          </Link>
+          <Link href="/signup" className="nav-link nav-link-primary">
+            Get Started
+          </Link>
         </div>
-      </header>
+      </nav>
 
-      {/* Main Content */}
-      <main style={styles.main}>
-        {/* Hero Section - show when no response */}
-        {!response && !isLoading && (
-          <div style={styles.hero}>
-            <h1 style={styles.heroTitle}>
-              The Verified Intelligence Engine
-            </h1>
-            <p style={styles.heroSubtitle}>
-              25 years of marketing knowledge. Verified sources. One question away.
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="hero-badge">
+          <span className="hero-badge-dot" />
+          AI-Powered Verification Engine
+        </div>
+        <h1 className="hero-title">
+          <span className="hero-title-white">The </span>
+          <span className="hero-title-gradient">Verified Intelligence</span>
+          <br />
+          <span className="hero-title-white">Engine</span>
+        </h1>
+        <p className="hero-subtitle">
+          25 years of marketing knowledge. Verified sources. Confidence scores.
+          One question away from the truth.
+        </p>
+        <div className="hero-ctas">
+          <a href="#query" className="btn-hero-primary">
+            Start Querying {'\u2192'}
+          </a>
+          <Link href="/signup" className="btn-hero-secondary">
+            Create Free Account
+          </Link>
+        </div>
+      </section>
+
+      <div className="gradient-divider" />
+
+      {/* How It Works */}
+      <section className="section">
+        <p className="section-label">How It Works</p>
+        <h2 className="section-title">Three Steps to Verified Truth</h2>
+        <p className="section-subtitle">
+          Ask a question, get a verified answer with sources and confidence scoring.
+        </p>
+        <div className="steps-grid">
+          <div className="step-card">
+            <div className="step-number step-number-1">1</div>
+            <h3 className="step-title">Submit</h3>
+            <p className="step-desc">
+              Ask any question about marketing, trends, benchmarks, or strategies from the last 25 years.
             </p>
           </div>
-        )}
-
-        {/* Vertical Selector */}
-        <div style={styles.verticalSelector}>
-          {VERTICALS.map(v => (
-            <button
-              key={v.id}
-              style={{
-                ...styles.verticalBtn,
-                ...(activeVertical === v.id ? styles.verticalBtnActive : {}),
-                ...(v.available ? {} : styles.verticalBtnDisabled)
-              }}
-              onClick={() => v.available && setActiveVertical(v.id)}
-              disabled={!v.available}
-            >
-              <span style={styles.verticalIcon}>{v.icon}</span>
-              <span>{v.name}</span>
-              {!v.available && <span style={styles.comingSoon}>Soon</span>}
-            </button>
-          ))}
+          <div className="step-card">
+            <div className="step-number step-number-2">2</div>
+            <h3 className="step-title">Analyze</h3>
+            <p className="step-desc">
+              Our AI cross-references thousands of verified data points, statistics, and case studies.
+            </p>
+          </div>
+          <div className="step-card">
+            <div className="step-number step-number-3">3</div>
+            <h3 className="step-title">Verify</h3>
+            <p className="step-desc">
+              Get a verified answer with confidence scores, source tracking, and historical context.
+            </p>
+          </div>
         </div>
+      </section>
 
-        {/* Search Input */}
-        <form onSubmit={handleSubmit} style={styles.searchForm}>
-          <div style={styles.searchContainer}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask anything about marketing..."
-              style={styles.searchInput}
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              style={{
-                ...styles.searchBtn,
-                ...(isLoading ? styles.searchBtnLoading : {})
-              }}
-              disabled={isLoading || !query.trim()}
-            >
-              {isLoading ? (
-                <span style={styles.spinner}>⟳</span>
-              ) : (
-                '→'
-              )}
-            </button>
+      <div className="gradient-divider" />
+
+      {/* Stats */}
+      <section className="stats-section">
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-number">25+</div>
+            <div className="stat-label">Years of Data</div>
           </div>
-        </form>
+          <div className="stat-card">
+            <div className="stat-number">98%</div>
+            <div className="stat-label">Accuracy Rate</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-number">10K+</div>
+            <div className="stat-label">Sources Indexed</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-number">50K+</div>
+            <div className="stat-label">Claims Verified</div>
+          </div>
+        </div>
+      </section>
 
-        {/* Example Queries - show when no response */}
-        {!response && !isLoading && (
-          <div style={styles.examples}>
-            <p style={styles.examplesLabel}>Try asking:</p>
-            <div style={styles.exampleGrid}>
-              {EXAMPLE_QUERIES.map((example, i) => (
-                <button
-                  key={i}
-                  style={styles.exampleBtn}
-                  onClick={() => handleExampleClick(example)}
-                >
-                  {example}
-                </button>
-              ))}
+      <div className="gradient-divider" />
+
+      {/* Query Section */}
+      <section className="section" id="query" ref={queryRef}>
+        <p className="section-label">Try It Now</p>
+        <h2 className="section-title">Ask the Engine</h2>
+        <p className="section-subtitle">
+          Query 25 years of verified marketing intelligence. Free to try.
+        </p>
+
+        <div className="query-container">
+          {/* Vertical Selector */}
+          <div className="vertical-selector">
+            {VERTICALS.map(v => (
+              <button
+                key={v.id}
+                className={`vertical-btn ${activeVertical === v.id ? 'active' : ''}`}
+                onClick={() => v.available && setActiveVertical(v.id)}
+                disabled={!v.available}
+              >
+                <span>{v.icon}</span>
+                <span>{v.name}</span>
+                {!v.available && <span className="coming-soon">Soon</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <form onSubmit={handleSubmit} className="search-form">
+            <div className="search-container">
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ask anything about marketing..."
+                className="search-input"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                className={`search-btn ${isLoading ? 'loading' : ''}`}
+                disabled={isLoading || !query.trim()}
+              >
+                {isLoading ? (
+                  <span className="spinner-icon">{'\u27F3'}</span>
+                ) : (
+                  '\u2192'
+                )}
+              </button>
             </div>
-          </div>
-        )}
+          </form>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div style={styles.loadingContainer}>
-            <div style={styles.loadingSpinner} />
-            <p style={styles.loadingText}>Searching verified sources...</p>
-          </div>
-        )}
-
-        {/* Response */}
-        {response && !isLoading && (
-          <div style={styles.responseContainer}>
-            <div style={styles.queryDisplay}>
-              <span style={styles.queryLabel}>Q:</span>
-              <span style={styles.queryText}>{response.query}</span>
+          {/* Examples */}
+          {!response && !isLoading && (
+            <div className="examples">
+              <p className="examples-label">Try asking:</p>
+              <div className="example-grid">
+                {EXAMPLE_QUERIES.map((example, i) => (
+                  <button
+                    key={i}
+                    className="example-btn"
+                    onClick={() => handleExampleClick(example)}
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            <div style={styles.answerCard}>
-              <div style={styles.answerHeader}>
-                <span style={styles.verifiedBadge}>
-                  ✓ Verified
-                </span>
-                <span style={styles.confidenceScore}>
-                  {Math.round((response.confidence || 0.85) * 100)}% confidence
-                </span>
-              </div>
-              
-              <div style={styles.answerText}>
-                {response.answer}
+          )}
+
+          {/* Loading */}
+          {isLoading && (
+            <div className="loading-container">
+              <div className="loading-spinner" />
+              <p className="loading-text">Searching verified sources...</p>
+            </div>
+          )}
+
+          {/* Response */}
+          {response && !isLoading && (
+            <div className="response-container">
+              <div className="query-display">
+                <span className="query-label">Q:</span>
+                <span className="query-text">{response.query}</span>
               </div>
 
-              {response.sources && response.sources.length > 0 && (
-                <div style={styles.sourcesSection}>
-                  <p style={styles.sourcesLabel}>Sources:</p>
-                  <div style={styles.sourcesList}>
+              <div className="answer-card">
+                <div className="answer-header">
+                  <span className="verified-badge">
+                    {'\u2713'} Verified
+                  </span>
+                  <span className="confidence-score">
+                    {Math.round((response.confidence || 0.85) * 100)}% confidence
+                  </span>
+                </div>
+
+                <div className="answer-text">
+                  {response.answer}
+                </div>
+
+                {response.sources && response.sources.length > 0 && (
+                  <div className="sources-section">
+                    <p className="sources-label">Sources:</p>
                     {response.sources.map((source, i) => (
-                      <div key={i} style={styles.sourceItem}>
-                        <span style={styles.sourceNumber}>[{i + 1}]</span>
-                        <span style={styles.sourceText}>{source.title || source}</span>
+                      <div key={i} className="source-item">
+                        <span className="source-number">[{i + 1}]</span>
+                        <span>{source.title || source}</span>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            <button
-              style={styles.newQueryBtn}
-              onClick={() => {
-                setResponse(null);
-                inputRef.current?.focus();
-              }}
-            >
-              Ask Another Question
-            </button>
-          </div>
-        )}
-      </main>
+              <button
+                className="new-query-btn"
+                onClick={() => {
+                  setResponse(null);
+                  inputRef.current?.focus();
+                }}
+              >
+                Ask Another Question
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <div className="gradient-divider" />
+
+      {/* Features */}
+      <section className="section">
+        <p className="section-label">Features</p>
+        <h2 className="section-title">Built for Truth</h2>
+        <p className="section-subtitle">
+          Every feature designed to deliver verified, trustworthy intelligence.
+        </p>
+        <div className="features-grid">
+          {FEATURES.map((f, i) => (
+            <div key={i} className="feature-card">
+              <div className="feature-icon">{f.icon}</div>
+              <h3 className="feature-title">{f.title}</h3>
+              <p className="feature-desc">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="gradient-divider" />
+
+      {/* CTA */}
+      <section className="cta-section">
+        <div className="cta-card">
+          <h2 className="cta-title">Ready for Verified Intelligence?</h2>
+          <p className="cta-subtitle">
+            Create your free account and start querying 25 years of verified marketing data.
+          </p>
+          <Link href="/signup" className="cta-btn">
+            Get Started Free {'\u2192'}
+          </Link>
+        </div>
+      </section>
 
       {/* History Sidebar */}
       {showHistory && (
-        <div style={styles.historySidebar}>
-          <div style={styles.historyHeader}>
-            <h3 style={styles.historyTitle}>Query History</h3>
-            <button 
-              style={styles.closeBtn}
-              onClick={() => setShowHistory(false)}
-            >
-              ×
+        <div className="history-sidebar">
+          <div className="history-header">
+            <h3 className="history-title">Query History</h3>
+            <button className="close-btn" onClick={() => setShowHistory(false)}>
+              {'\u00D7'}
             </button>
           </div>
-          <div style={styles.historyList}>
+          <div className="history-list">
             {history.length === 0 ? (
-              <p style={styles.noHistory}>No queries yet</p>
+              <p className="no-history">No queries yet</p>
             ) : (
               history.map((item, i) => (
-                <div 
-                  key={i} 
-                  style={styles.historyItem}
+                <div
+                  key={i}
+                  className="history-item"
                   onClick={() => {
                     setResponse(item);
                     setShowHistory(false);
                   }}
                 >
-                  <p style={styles.historyQuery}>{item.query}</p>
-                  <p style={styles.historyMeta}>
+                  <p className="history-query">{item.query}</p>
+                  <p className="history-meta">
                     {new Date(item.timestamp).toLocaleTimeString()}
                   </p>
                 </div>
@@ -313,440 +452,20 @@ export default function VerifiedSXO() {
       )}
 
       {/* Footer */}
-      <footer style={styles.footer}>
-        <p>Powered by 25 years of verified marketing intelligence</p>
-        <p style={styles.footerSub}>© 2026 RocketOpp • VerifiedSXO.com</p>
+      <footer className="footer">
+        <div className="footer-links">
+          <Link href="/login" className="footer-link">Sign In</Link>
+          <Link href="/signup" className="footer-link">Sign Up</Link>
+          <a href="#query" className="footer-link">Try It</a>
+        </div>
+        <p className="footer-main">
+          Verified marketing intelligence from 2000-2026
+        </p>
+        <p className="footer-powered">
+          Powered by <span>0nMCP</span>
+        </p>
+        <p className="footer-sub">&copy; 2026 RocketOpp &middot; VerifiedSXO.com</p>
       </footer>
     </div>
   );
-}
-
-// ============================================
-// STYLES - Premium RocketOpp Design System
-// ============================================
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    background: '#0a0a12',
-    color: '#ffffff',
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif",
-    position: 'relative',
-    overflow: 'hidden'
-  },
-  bgGradient: {
-    position: 'absolute',
-    top: 0,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '150%',
-    height: '600px',
-    background: 'radial-gradient(ellipse at center top, rgba(255,107,53,0.15) 0%, transparent 60%)',
-    pointerEvents: 'none'
-  },
-  
-  // Header
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px 24px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-    position: 'relative',
-    zIndex: 10
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px'
-  },
-  logoIcon: {
-    fontSize: '28px',
-    filter: 'drop-shadow(0 0 12px rgba(255,107,53,0.6))'
-  },
-  logoText: {
-    fontSize: '20px',
-    fontWeight: 700,
-    background: 'linear-gradient(135deg, #ff6b35, #ff8c42)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
-  },
-  headerRight: {
-    display: 'flex',
-    gap: '12px'
-  },
-  historyBtn: {
-    padding: '8px 16px',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '8px',
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: '14px',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-
-  // Main
-  main: {
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '40px 24px',
-    position: 'relative',
-    zIndex: 10
-  },
-
-  // Hero
-  hero: {
-    textAlign: 'center',
-    marginBottom: '40px'
-  },
-  heroTitle: {
-    fontSize: '42px',
-    fontWeight: 800,
-    lineHeight: 1.1,
-    marginBottom: '16px',
-    background: 'linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
-  },
-  heroSubtitle: {
-    fontSize: '18px',
-    color: 'rgba(255,255,255,0.6)',
-    maxWidth: '500px',
-    margin: '0 auto'
-  },
-
-  // Vertical Selector
-  verticalSelector: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '8px',
-    marginBottom: '24px',
-    flexWrap: 'wrap'
-  },
-  verticalBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 16px',
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '100px',
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: '14px',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  verticalBtnActive: {
-    background: 'linear-gradient(135deg, rgba(255,107,53,0.2), rgba(255,140,66,0.1))',
-    borderColor: 'rgba(255,107,53,0.4)',
-    color: '#ffffff'
-  },
-  verticalBtnDisabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed'
-  },
-  verticalIcon: {
-    fontSize: '16px'
-  },
-  comingSoon: {
-    fontSize: '10px',
-    padding: '2px 6px',
-    background: 'rgba(255,255,255,0.1)',
-    borderRadius: '4px',
-    marginLeft: '4px'
-  },
-
-  // Search
-  searchForm: {
-    marginBottom: '32px'
-  },
-  searchContainer: {
-    display: 'flex',
-    gap: '12px',
-    background: '#111118',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '16px',
-    padding: '8px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-    transition: 'all 0.2s'
-  },
-  searchInput: {
-    flex: 1,
-    padding: '16px 20px',
-    background: 'transparent',
-    border: 'none',
-    color: '#ffffff',
-    fontSize: '18px',
-    outline: 'none'
-  },
-  searchBtn: {
-    padding: '16px 24px',
-    background: 'linear-gradient(135deg, #ff6b35, #ff8c42)',
-    border: 'none',
-    borderRadius: '12px',
-    color: '#ffffff',
-    fontSize: '20px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-    boxShadow: '0 4px 16px rgba(255,107,53,0.3)'
-  },
-  searchBtnLoading: {
-    opacity: 0.7,
-    cursor: 'wait'
-  },
-  spinner: {
-    display: 'inline-block',
-    animation: 'spin 1s linear infinite'
-  },
-
-  // Examples
-  examples: {
-    textAlign: 'center'
-  },
-  examplesLabel: {
-    fontSize: '14px',
-    color: 'rgba(255,255,255,0.4)',
-    marginBottom: '16px'
-  },
-  exampleGrid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: '8px'
-  },
-  exampleBtn: {
-    padding: '10px 16px',
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '100px',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '13px',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-
-  // Loading
-  loadingContainer: {
-    textAlign: 'center',
-    padding: '60px 0'
-  },
-  loadingSpinner: {
-    width: '48px',
-    height: '48px',
-    border: '3px solid rgba(255,255,255,0.1)',
-    borderTopColor: '#ff6b35',
-    borderRadius: '50%',
-    margin: '0 auto 20px',
-    animation: 'spin 0.8s linear infinite'
-  },
-  loadingText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: '16px'
-  },
-
-  // Response
-  responseContainer: {
-    animation: 'fadeIn 0.3s ease'
-  },
-  queryDisplay: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '12px',
-    marginBottom: '20px',
-    padding: '16px',
-    background: 'rgba(255,255,255,0.03)',
-    borderRadius: '12px'
-  },
-  queryLabel: {
-    color: '#ff6b35',
-    fontWeight: 700,
-    fontSize: '16px'
-  },
-  queryText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: '16px',
-    lineHeight: 1.5
-  },
-  answerCard: {
-    background: '#16161f',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '16px',
-    padding: '24px',
-    marginBottom: '20px',
-    position: 'relative',
-    overflow: 'hidden'
-  },
-  answerHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px'
-  },
-  verifiedBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 12px',
-    background: 'rgba(16,185,129,0.15)',
-    color: '#10b981',
-    borderRadius: '100px',
-    fontSize: '13px',
-    fontWeight: 600
-  },
-  confidenceScore: {
-    fontSize: '13px',
-    color: 'rgba(255,255,255,0.4)'
-  },
-  answerText: {
-    fontSize: '17px',
-    lineHeight: 1.7,
-    color: 'rgba(255,255,255,0.9)'
-  },
-  sourcesSection: {
-    marginTop: '20px',
-    paddingTop: '20px',
-    borderTop: '1px solid rgba(255,255,255,0.08)'
-  },
-  sourcesLabel: {
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    marginBottom: '12px'
-  },
-  sourcesList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px'
-  },
-  sourceItem: {
-    display: 'flex',
-    gap: '8px',
-    fontSize: '14px',
-    color: 'rgba(255,255,255,0.6)'
-  },
-  sourceNumber: {
-    color: '#ff6b35',
-    fontWeight: 600
-  },
-  sourceText: {},
-  newQueryBtn: {
-    width: '100%',
-    padding: '16px',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '12px',
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: '15px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-
-  // History Sidebar
-  historySidebar: {
-    position: 'fixed',
-    top: 0,
-    right: 0,
-    width: '320px',
-    height: '100vh',
-    background: '#111118',
-    borderLeft: '1px solid rgba(255,255,255,0.08)',
-    zIndex: 100,
-    display: 'flex',
-    flexDirection: 'column',
-    animation: 'slideIn 0.2s ease'
-  },
-  historyHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px',
-    borderBottom: '1px solid rgba(255,255,255,0.08)'
-  },
-  historyTitle: {
-    fontSize: '16px',
-    fontWeight: 600,
-    margin: 0
-  },
-  closeBtn: {
-    width: '32px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(255,255,255,0.05)',
-    border: 'none',
-    borderRadius: '8px',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '20px',
-    cursor: 'pointer'
-  },
-  historyList: {
-    flex: 1,
-    overflow: 'auto',
-    padding: '12px'
-  },
-  noHistory: {
-    textAlign: 'center',
-    color: 'rgba(255,255,255,0.3)',
-    padding: '40px 0'
-  },
-  historyItem: {
-    padding: '12px',
-    background: 'rgba(255,255,255,0.03)',
-    borderRadius: '8px',
-    marginBottom: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  historyQuery: {
-    fontSize: '14px',
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: '4px',
-    lineHeight: 1.4
-  },
-  historyMeta: {
-    fontSize: '12px',
-    color: 'rgba(255,255,255,0.3)'
-  },
-
-  // Footer
-  footer: {
-    textAlign: 'center',
-    padding: '24px',
-    borderTop: '1px solid rgba(255,255,255,0.06)',
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: '13px'
-  },
-  footerSub: {
-    marginTop: '4px',
-    fontSize: '12px',
-    color: 'rgba(255,255,255,0.2)'
-  }
-};
-
-// Add keyframes via style tag
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = `
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slideIn {
-      from { transform: translateX(100%); }
-      to { transform: translateX(0); }
-    }
-    input::placeholder {
-      color: rgba(255,255,255,0.3);
-    }
-  `;
-  document.head.appendChild(styleSheet);
 }
