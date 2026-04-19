@@ -1,7 +1,7 @@
-node_modules/
-.next/
-.vercel/
+node_modules
+.next
 .env
 .env.local
 .DS_Store
-verified/
+*.log
+.vercel
