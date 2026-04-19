@@ -35,6 +35,13 @@ export default function Home() {
               </div>
             </AnimatedSection>
 
+            {/* BS Scanner — lives directly above the H1 */}
+            <AnimatedSection delay={50}>
+              <div id="verify" className="mb-16 scroll-mt-24">
+                <BsScanner />
+              </div>
+            </AnimatedSection>
+
             <AnimatedSection delay={100}>
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-balance mb-6">
                 Every stat claim,{" "}
@@ -93,20 +100,6 @@ export default function Home() {
                   <div className="text-xs text-muted-foreground mt-1">First score</div>
                 </div>
               </div>
-            </AnimatedSection>
-          </div>
-        </section>
-
-        {/* BS Detector — animated radar + claim intake */}
-        <section
-          id="verify"
-          className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 scroll-mt-20 relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" aria-hidden />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" aria-hidden />
-          <div className="relative z-10">
-            <AnimatedSection>
-              <BsScanner />
             </AnimatedSection>
           </div>
         </section>
