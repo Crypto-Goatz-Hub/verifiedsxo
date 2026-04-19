@@ -3,7 +3,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AnimatedGridBackground } from "@/components/animated-grid-background"
 import { AnimatedSection } from "@/components/animated-section"
-import { ClaimIntake } from "@/components/claim-intake"
+import { BsScanner } from "@/components/bs-scanner"
 import { ArrowRight, ShieldCheck, Brain, LinkIcon, Award } from "lucide-react"
 import Link from "next/link"
 
@@ -97,31 +97,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Claim intake */}
+        {/* BS Detector — animated radar + claim intake */}
         <section
           id="verify"
-          className="py-24 px-4 sm:px-6 lg:px-8 scroll-mt-20 relative overflow-hidden"
+          className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 scroll-mt-20 relative overflow-hidden"
         >
-          <div
-            className="absolute top-0 right-0 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl pointer-events-none"
-            aria-hidden
-          />
-          <div className="max-w-3xl mx-auto relative z-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" aria-hidden />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" aria-hidden />
+          <div className="relative z-10">
             <AnimatedSection>
-              <div className="text-center mb-10">
-                <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                  Step 1 — Paste the claim
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance mb-4">
-                  Drop any marketing stat
-                </h2>
-                <p className="text-lg text-muted-foreground">
-                  We&apos;ll score how likely it is to be true — in seconds.
-                </p>
-              </div>
-            </AnimatedSection>
-            <AnimatedSection delay={100}>
-              <ClaimIntake />
+              <BsScanner />
             </AnimatedSection>
           </div>
         </section>
