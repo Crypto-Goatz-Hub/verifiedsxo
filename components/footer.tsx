@@ -30,6 +30,7 @@ export function Footer() {
               <li><Link href="/for-agencies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">For agencies</Link></li>
               <li><Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link></li>
               <li><Link href="/#verify" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Verify a claim</Link></li>
+              <li><Link href="/badge-examples" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Badge examples</Link></li>
             </ul>
           </div>
 
