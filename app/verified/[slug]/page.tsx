@@ -118,6 +118,14 @@ export default async function VerifiedPage({ params }: Props) {
             </ul>
           </section>
 
+          <div className="text-center mb-6">
+            <Link href={`/certificate/${slug}`}>
+              <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 transition-colors text-sm font-medium">
+                <ShieldCheck className="w-4 h-4" /> View official certificate
+              </button>
+            </Link>
+          </div>
+
           <div className="text-center text-sm text-muted-foreground">
             Audited by {agencyName} · powered by{" "}
             <Link href="/" className="text-foreground hover:underline">VerifiedSXO</Link>

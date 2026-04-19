@@ -10,6 +10,7 @@
  */
 
 import { getSupabaseAdmin } from "@/lib/supabase/server"
+import { issueCertificateAndTag } from "@/lib/crm-cert"
 
 const GROQ_KEY = process.env.GROQ_API_KEY || ""
 const MAX_DOC_BYTES = 30_000
@@ -234,6 +235,8 @@ export async function runElevation(claimId: string): Promise<ElevationResult> {
       .from("vsxo_badges")
       .update({ last_verified_at: now })
       .eq("claim_id", claim.id)
+    // Fire-and-forget CRM tag upgrade
+    issueCertificateAndTag({ claimId: claim.id, elevated: true }).catch(() => {})
   } else {
     // Park in pending_review if we were verified; otherwise leave the status alone
     if (claim.status === "verified" || claim.status === "pending_review") {

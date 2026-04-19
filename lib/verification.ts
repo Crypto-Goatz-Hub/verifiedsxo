@@ -14,6 +14,7 @@
 import { randomBytes } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase/server"
 import { searchAnalytics } from "@/lib/google/search-console-user"
+import { issueCertificateAndTag } from "@/lib/crm-cert"
 
 export type VerifiableClaimType = "ranking" | "traffic"
 
@@ -201,6 +202,8 @@ export async function runVerification(claimId: string): Promise<{
     if (!bErr) {
       badgeSlug = slug
       scriptToken = token
+      // Fire-and-forget CRM tag + custom field write
+      issueCertificateAndTag({ claimId: claim.id, elevated: false }).catch(() => {})
     }
   }
 
