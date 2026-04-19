@@ -1,41 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
+import { upsertContact, sendEmailViaCrm } from "@/lib/crm"
 
 export const runtime = "nodejs"
 
-const CRM_API = "https://services.leadconnectorhq.com"
-const CRM_VERSION = "2021-07-28"
-const FROM_EMAIL = process.env.CRM_FROM_EMAIL || "noreply@verifiedsxo.com"
-
 function newInviteToken(): string {
   return randomBytes(24).toString("base64url")
-}
-
-async function upsertCrmClient(email: string, name: string, company: string | undefined, agencyId: string, agencyName: string) {
-  const pit = process.env.CRM_AGENCY_PIT || ""
-  const locationId = process.env.CRM_LOCATION_ID || ""
-  if (!pit || !locationId) return null
-  try {
-    const res = await fetch(`${CRM_API}/contacts/upsert`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${pit}`, "Content-Type": "application/json", Version: CRM_VERSION },
-      body: JSON.stringify({
-        locationId,
-        email,
-        firstName: name.split(" ")[0] || name,
-        lastName: name.split(" ").slice(1).join(" ") || "",
-        companyName: company,
-        source: `VerifiedSXO Invite · ${agencyName}`,
-        tags: ["Client", "verifiedsxo", `agency:${agencyId}`],
-      }),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data?.contact?.id || data?.id || null
-  } catch {
-    return null
-  }
 }
 
 function renderEmail(inviteUrl: string, agencyName: string, firstName: string): { subject: string; html: string; text: string } {
@@ -71,29 +42,6 @@ function renderEmail(inviteUrl: string, agencyName: string, firstName: string): 
   return { subject, html, text }
 }
 
-async function emailInvite(contactId: string, to: string, subject: string, html: string, text: string): Promise<boolean> {
-  const pit = process.env.CRM_AGENCY_PIT || ""
-  if (!pit || !contactId) return false
-  try {
-    const res = await fetch(`${CRM_API}/conversations/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${pit}`, "Content-Type": "application/json", Version: CRM_VERSION },
-      body: JSON.stringify({
-        type: "Email",
-        contactId,
-        subject,
-        html,
-        text,
-        emailTo: to,
-        emailFrom: FROM_EMAIL,
-      }),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const agencyId: string = body?.agencyId || ""
@@ -110,7 +58,6 @@ export async function POST(req: NextRequest) {
 
   const admin = getSupabaseAdmin()
 
-  // Verify user has access to this agency
   const { data: membership } = await admin
     .from("vsxo_agency_members")
     .select("role")
@@ -130,7 +77,6 @@ export async function POST(req: NextRequest) {
 
   const token = newInviteToken()
 
-  // Upsert the client row (handles re-inviting the same email)
   const { data: clientRow, error: upsertErr } = await admin
     .from("vsxo_agency_clients")
     .upsert(
@@ -150,21 +96,31 @@ export async function POST(req: NextRequest) {
 
   if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 })
 
-  // CRM contact + email — best-effort, don't fail the API
-  const crmContactId = await upsertCrmClient(email, name, company, agencyId, agencyName)
-  if (crmContactId) {
-    await admin.from("vsxo_agency_clients").update({ crm_contact_id: crmContactId }).eq("id", clientRow.id)
+  const crm = await upsertContact({
+    email,
+    firstName: name.split(" ")[0] || name,
+    lastName: name.split(" ").slice(1).join(" ") || "",
+    companyName: company,
+    source: `VerifiedSXO Invite · ${agencyName}`,
+    tags: ["Client", "verifiedsxo", `agency:${agencyId}`],
+  })
+
+  if (crm.id) {
+    await admin.from("vsxo_agency_clients").update({ crm_contact_id: crm.id }).eq("id", clientRow.id)
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://verifiedsxo.com"
   const inviteUrl = `${baseUrl}/invite/${token}`
   const { subject, html, text } = renderEmail(inviteUrl, agencyName, name.split(" ")[0] || name)
-  const emailed = crmContactId ? await emailInvite(crmContactId, email, subject, html, text) : false
+
+  const mail = crm.id
+    ? await sendEmailViaCrm({ contactId: crm.id, to: email, subject, html, text })
+    : { ok: false, error: "no-crm-contact" as string }
 
   return NextResponse.json({
     clientId: clientRow.id,
     inviteUrl,
-    emailSent: emailed,
-    crmContactId,
+    crm: { contactId: crm.id, error: crm.error, status: crm.status },
+    email: { sent: mail.ok, error: (mail as { error?: string }).error, status: (mail as { status?: number }).status, messageId: (mail as { messageId?: string }).messageId },
   })
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
+import { upsertContact } from "@/lib/crm"
 
 export const runtime = "nodejs"
 
@@ -9,38 +10,6 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 40)
-}
-
-const CRM_API = "https://services.leadconnectorhq.com"
-const CRM_VERSION = "2021-07-28"
-
-async function upsertCrmContact(email: string, name: string, agencyName: string): Promise<string | null> {
-  const pit = process.env.CRM_AGENCY_PIT || ""
-  const locationId = process.env.CRM_LOCATION_ID || ""
-  if (!pit || !locationId) return null
-  try {
-    const res = await fetch(`${CRM_API}/contacts/upsert`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${pit}`,
-        "Content-Type": "application/json",
-        Version: CRM_VERSION,
-      },
-      body: JSON.stringify({
-        locationId,
-        email,
-        firstName: name.split(" ")[0] || name,
-        lastName: name.split(" ").slice(1).join(" ") || "",
-        source: "VerifiedSXO Agency Signup",
-        tags: ["Agency", "verifiedsxo", `agency:${slugify(agencyName)}`],
-      }),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data?.contact?.id || data?.id || null
-  } catch {
-    return null
-  }
 }
 
 export async function POST(req: NextRequest) {
@@ -64,8 +33,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Upsert CRM contact in parallel with agency row
-  const [crmContactId, { data: agency, error }] = await Promise.all([
-    upsertCrmContact(user.email || "", user.user_metadata?.full_name || user.email || "there", name),
+  const userName = user.user_metadata?.full_name || user.email || "there"
+  const [crmResult, { data: agency, error }] = await Promise.all([
+    upsertContact({
+      email: user.email || "",
+      firstName: userName.split(" ")[0] || userName,
+      lastName: userName.split(" ").slice(1).join(" ") || "",
+      source: "VerifiedSXO Agency Signup",
+      tags: ["Agency", "verifiedsxo", `agency:${slugify(name)}`],
+    }),
     admin
       .from("vsxo_agencies")
       .insert({
@@ -76,6 +52,7 @@ export async function POST(req: NextRequest) {
       .select("id, slug")
       .single(),
   ])
+  const crmContactId = crmResult.id
 
   if (error || !agency) {
     return NextResponse.json({ error: error?.message || "insert failed" }, { status: 500 })
