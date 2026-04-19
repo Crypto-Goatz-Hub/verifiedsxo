@@ -5,7 +5,8 @@ import { Header } from "@/components/header"
 import { ClaimStatusBadge } from "@/components/claim-status-badge"
 import { Button } from "@/components/ui/button"
 import { buildTimeline, STATUS_META, type ClaimStatus } from "@/lib/claims"
-import { ShieldCheck, ArrowLeft, ArrowRight, Upload, Sparkles } from "lucide-react"
+import { EvidenceUploader } from "@/components/evidence-uploader"
+import { ShieldCheck, ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -155,6 +156,11 @@ export default async function ClaimDetailPage({ params }: Props) {
             </section>
           )}
 
+          {/* Evidence documents */}
+          <div className="mb-6">
+            <EvidenceUploader claimId={claim.id} editable={true} />
+          </div>
+
           {/* Actions */}
           <section className="rounded-xl border border-border bg-card p-6">
             <h2 className="text-sm font-semibold mb-4 uppercase tracking-wider text-muted-foreground">Next steps</h2>
@@ -166,12 +172,7 @@ export default async function ClaimDetailPage({ params }: Props) {
                   <div className="text-xs text-muted-foreground">Submit with current data connection</div>
                 </Link>
               )}
-              <div className="p-4 rounded-lg border border-border bg-background opacity-70">
-                <Upload className="w-4 h-4 mb-2" />
-                <div className="text-sm font-medium mb-1">Upload evidence</div>
-                <div className="text-xs text-muted-foreground">Add supporting docs (coming next)</div>
-              </div>
-              {status === "verified" && (
+              {(status === "verified" || status === "pending_review") && (
                 <div className="p-4 rounded-lg border border-border bg-background opacity-70">
                   <ShieldCheck className="w-4 h-4 mb-2" />
                   <div className="text-sm font-medium mb-1">Elevate to 100%</div>

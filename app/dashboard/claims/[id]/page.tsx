@@ -5,7 +5,8 @@ import { Header } from "@/components/header"
 import { ClaimStatusBadge } from "@/components/claim-status-badge"
 import { Button } from "@/components/ui/button"
 import { buildTimeline, STATUS_META, type ClaimStatus } from "@/lib/claims"
-import { ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react"
+import { EvidenceUploader } from "@/components/evidence-uploader"
+import { ShieldCheck, ArrowLeft } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -154,6 +155,8 @@ export default async function AgencyClaimDetailPage({ params }: Props) {
               </ul>
             </section>
           )}
+
+          <EvidenceUploader claimId={claim.id} editable={true} />
         </div>
       </main>
     </>
