@@ -6,6 +6,7 @@ import { ClaimStatusBadge } from "@/components/claim-status-badge"
 import { Button } from "@/components/ui/button"
 import { buildTimeline, STATUS_META, type ClaimStatus } from "@/lib/claims"
 import { EvidenceUploader } from "@/components/evidence-uploader"
+import { ElevateButton } from "@/components/elevate-button"
 import { ShieldCheck, ArrowLeft } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -157,6 +158,18 @@ export default async function AgencyClaimDetailPage({ params }: Props) {
           )}
 
           <EvidenceUploader claimId={claim.id} editable={true} />
+
+          {(status === "verified" || status === "pending_review" || status === "elevated") && (
+            <section className="rounded-xl border border-border bg-card p-6 mt-6">
+              <h2 className="text-sm font-semibold mb-2 uppercase tracking-wider text-muted-foreground">
+                {status === "elevated" ? "Re-run AI elevation" : "Elevate to 100%"}
+              </h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                AI reviews the uploaded evidence against the live-data verification.
+              </p>
+              <ElevateButton claimId={claim.id} />
+            </section>
+          )}
         </div>
       </main>
     </>

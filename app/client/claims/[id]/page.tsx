@@ -6,6 +6,7 @@ import { ClaimStatusBadge } from "@/components/claim-status-badge"
 import { Button } from "@/components/ui/button"
 import { buildTimeline, STATUS_META, type ClaimStatus } from "@/lib/claims"
 import { EvidenceUploader } from "@/components/evidence-uploader"
+import { ElevateButton } from "@/components/elevate-button"
 import { ShieldCheck, ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -45,6 +46,12 @@ export default async function ClaimDetailPage({ params }: Props) {
     .select("slug, script_token, last_verified_at, public_visible, embed_count")
     .eq("claim_id", id)
     .maybeSingle()
+
+  const [{ count: docCount }, { count: passedVerifs }] = await Promise.all([
+    admin.from("vsxo_claim_documents").select("id", { count: "exact", head: true }).eq("claim_id", id),
+    admin.from("vsxo_verifications").select("id", { count: "exact", head: true }).eq("claim_id", id).eq("passed", true),
+  ])
+  const elevationEligible = (docCount || 0) > 0 && (passedVerifs || 0) > 0
 
   const status = (claim.status as ClaimStatus) || "scored"
   const timeline = buildTimeline({
@@ -172,11 +179,18 @@ export default async function ClaimDetailPage({ params }: Props) {
                   <div className="text-xs text-muted-foreground">Submit with current data connection</div>
                 </Link>
               )}
-              {(status === "verified" || status === "pending_review") && (
-                <div className="p-4 rounded-lg border border-border bg-background opacity-70">
-                  <ShieldCheck className="w-4 h-4 mb-2" />
-                  <div className="text-sm font-medium mb-1">Elevate to 100%</div>
-                  <div className="text-xs text-muted-foreground">AI review with your docs (coming next)</div>
+              {(status === "verified" || status === "pending_review" || status === "elevated") && (
+                <div className="p-4 rounded-lg border border-border bg-background">
+                  <ShieldCheck className={`w-4 h-4 mb-2 ${status === "elevated" ? "text-emerald-500" : ""}`} />
+                  <div className="text-sm font-medium mb-1">
+                    {status === "elevated" ? "Re-run elevation" : "Elevate to 100%"}
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-3">
+                    {elevationEligible
+                      ? "AI reviews your docs + live-API evidence."
+                      : "Upload at least one doc after a passed verification."}
+                  </div>
+                  <ElevateButton claimId={claim.id} disabled={!elevationEligible} />
                 </div>
               )}
               {badge && (
