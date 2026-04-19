@@ -10,7 +10,7 @@ export function getStripe(): Stripe {
   return _stripe
 }
 
-export type PlanId = "free" | "pro" | "scale"
+export type PlanId = "free" | "pro" | "scale" | "membership"
 
 export interface Plan {
   id: PlanId
@@ -81,3 +81,34 @@ export const PLANS: Plan[] = [
     href: "/contact?topic=enterprise",
   },
 ]
+
+/**
+ * Public-profile membership is an independent add-on — an agency on ANY
+ * plan can subscribe to unlock /u/[slug]. Renders separately from PLANS
+ * on the pricing page and inside the dashboard as an upsell card.
+ */
+export const MEMBERSHIP: Plan = {
+  id: "membership",
+  name: "Public Profile Membership",
+  priceId: process.env.STRIPE_PRICE_VERIFIED_MEMBERSHIP || "",
+  priceUsd: 8,
+  billing: "month",
+  tagline: "Your own hosted profile + LinkedIn badge + certificate flow.",
+  features: [
+    "Public profile at verifiedsxo.com/u/[slug]",
+    "All your verified claims in one place",
+    "LinkedIn connect badge on profile",
+    "Click-to-copy embed code per claim",
+    "Certificate issued via CRM memberships",
+    "Listed in the VerifiedSXO directory",
+  ],
+  cta: "Activate public profile — $8/mo",
+  href: "/api/stripe/checkout?plan=membership",
+}
+
+export function mapPriceToPlan(priceId: string | null | undefined): PlanId {
+  if (!priceId) return "free"
+  if (priceId === process.env.STRIPE_PRICE_VERIFIED_PRO) return "pro"
+  if (priceId === process.env.STRIPE_PRICE_VERIFIED_MEMBERSHIP) return "membership"
+  return "pro"
+}

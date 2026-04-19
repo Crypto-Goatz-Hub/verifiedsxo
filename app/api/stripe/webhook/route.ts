@@ -1,24 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import type Stripe from "stripe"
-import { getStripe } from "@/lib/stripe"
+import { getStripe, mapPriceToPlan } from "@/lib/stripe"
 import { getSupabaseAdmin } from "@/lib/supabase/server"
 import { pingMike } from "@/lib/notify-mike"
 
 export const runtime = "nodejs"
-// Disable built-in body parsing so we can access the raw body for signature verify
 export const dynamic = "force-dynamic"
 
 async function readBody(req: NextRequest): Promise<string> {
   return await req.text()
 }
 
-function mapPriceToPlan(priceId: string | null | undefined): "free" | "starter" | "pro" | "scale" {
-  if (!priceId) return "free"
-  if (priceId === process.env.STRIPE_PRICE_VERIFIED_PRO) return "pro"
-  return "pro" // default non-free assumption
-}
-
-async function applySubscription(agencyId: string | null, plan: string, statusSource: string, subId?: string) {
+async function applyAgencyTier(agencyId: string | null, plan: string, source: string, subId?: string) {
   if (!agencyId) return
   const admin = getSupabaseAdmin()
   await admin
@@ -26,14 +19,36 @@ async function applySubscription(agencyId: string | null, plan: string, statusSo
     .update({ plan, updated_at: new Date().toISOString() })
     .eq("id", agencyId)
   pingMike({
-    event: plan === "free" ? "client.invite_accepted" : "agency.signup",
-    headline: `Plan updated → ${plan} (${statusSource})`,
-    fields: {
-      "Agency ID": agencyId,
-      Plan: plan,
-      "Stripe sub": subId || "—",
-      Source: statusSource,
-    },
+    event: "agency.signup",
+    headline: `Plan → ${plan} (${source})`,
+    fields: { "Agency ID": agencyId, Plan: plan, "Stripe sub": subId || "—", Source: source },
+    link: `https://verifiedsxo.com/dashboard`,
+  })
+}
+
+async function applyMembership(
+  agencyId: string | null,
+  status: "active" | "past_due" | "canceled",
+  sub?: Stripe.Subscription,
+  source?: string,
+) {
+  if (!agencyId) return
+  const admin = getSupabaseAdmin()
+  const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null
+  await admin
+    .from("vsxo_agencies")
+    .update({
+      membership_status: status,
+      membership_stripe_sub_id: sub?.id || null,
+      membership_current_period_end: periodEnd,
+      public_profile_enabled: status === "active",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", agencyId)
+  pingMike({
+    event: "agency.signup",
+    headline: `Membership → ${status} (${source || "?"})`,
+    fields: { "Agency ID": agencyId, Status: status, "Stripe sub": sub?.id || "—", "Period end": periodEnd || "—" },
     link: `https://verifiedsxo.com/dashboard`,
   })
 }
@@ -50,7 +65,10 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, secret)
   } catch (err) {
-    return NextResponse.json({ error: `signature verification failed: ${err instanceof Error ? err.message : "unknown"}` }, { status: 400 })
+    return NextResponse.json(
+      { error: `signature verification failed: ${err instanceof Error ? err.message : "unknown"}` },
+      { status: 400 }
+    )
   }
 
   switch (event.type) {
@@ -58,28 +76,48 @@ export async function POST(req: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session
       const agencyId = (session.metadata?.vsxo_agency_id as string | undefined) || null
       const plan = (session.metadata?.vsxo_plan as string | undefined) || "pro"
-      await applySubscription(agencyId, plan, "checkout.session.completed", String(session.subscription || ""))
+      const subId = typeof session.subscription === "string" ? session.subscription : null
+      if (plan === "membership") {
+        const sub = subId ? await stripe.subscriptions.retrieve(subId) : undefined
+        await applyMembership(agencyId, "active", sub, "checkout.session.completed")
+      } else {
+        await applyAgencyTier(agencyId, plan, "checkout.session.completed", subId || undefined)
+      }
       break
     }
     case "customer.subscription.updated":
     case "customer.subscription.created": {
       const sub = event.data.object as Stripe.Subscription
       const agencyId = (sub.metadata?.vsxo_agency_id as string | undefined) || null
+      const planMeta = (sub.metadata?.vsxo_plan as string | undefined) || ""
       const priceId = sub.items?.data?.[0]?.price?.id
-      const plan = sub.status === "active" || sub.status === "trialing"
-        ? mapPriceToPlan(priceId)
-        : "free"
-      await applySubscription(agencyId, plan, event.type, sub.id)
+      const inferredPlan = mapPriceToPlan(priceId)
+
+      if (planMeta === "membership" || inferredPlan === "membership") {
+        const status = sub.status === "active" || sub.status === "trialing" ? "active"
+          : sub.status === "past_due" ? "past_due"
+          : "canceled"
+        await applyMembership(agencyId, status, sub, event.type)
+      } else {
+        const plan =
+          sub.status === "active" || sub.status === "trialing" ? inferredPlan : "free"
+        await applyAgencyTier(agencyId, plan, event.type, sub.id)
+      }
       break
     }
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription
       const agencyId = (sub.metadata?.vsxo_agency_id as string | undefined) || null
-      await applySubscription(agencyId, "free", "subscription.deleted", sub.id)
+      const planMeta = (sub.metadata?.vsxo_plan as string | undefined) || ""
+      const priceId = sub.items?.data?.[0]?.price?.id
+      if (planMeta === "membership" || mapPriceToPlan(priceId) === "membership") {
+        await applyMembership(agencyId, "canceled", sub, "subscription.deleted")
+      } else {
+        await applyAgencyTier(agencyId, "free", "subscription.deleted", sub.id)
+      }
       break
     }
     default:
-      // ignore other events
       break
   }
 

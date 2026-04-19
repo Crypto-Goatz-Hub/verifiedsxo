@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   // Find the user's primary agency (first they own or are a member of)
   const { data: ownedAgency } = await admin
     .from("vsxo_agencies")
-    .select("id, name, slug, plan, created_at")
+    .select("id, name, slug, plan, created_at, membership_status, public_profile_enabled")
     .eq("owner_user_id", user.id)
     .order("created_at", { ascending: true })
     .limit(1)
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   if (!agency) {
     const { data: memberAgency } = await admin
       .from("vsxo_agency_members")
-      .select("vsxo_agencies(id, name, slug, plan, created_at)")
+      .select("vsxo_agencies(id, name, slug, plan, created_at, membership_status, public_profile_enabled)")
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle()
@@ -80,6 +80,43 @@ export default async function DashboardPage() {
                 <Button type="submit" variant="outline" size="sm">Sign out</Button>
               </form>
             </div>
+          </div>
+
+          {/* Public profile card */}
+          <div className="mb-6">
+            {agency.public_profile_enabled && agency.membership_status === "active" ? (
+              <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-5 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-emerald-600 mb-1">Public profile — Active</div>
+                  <div className="text-sm">
+                    Live at{" "}
+                    <Link href={`/u/${agency.slug}`} className="font-mono underline underline-offset-2">
+                      verifiedsxo.com/u/{agency.slug}
+                    </Link>
+                  </div>
+                </div>
+                <Link href={`/u/${agency.slug}`}>
+                  <Button variant="outline" size="sm">View profile</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-cyan-500/5 p-5 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-violet-600 mb-1">Public profile</div>
+                  <div className="text-sm font-medium">
+                    Activate your agency profile page for <span className="font-semibold">$8/mo</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Public page · LinkedIn badge · click-to-copy embeds · certificate flow
+                  </div>
+                </div>
+                <Link href="/api/stripe/checkout?plan=membership">
+                  <Button size="sm" className="bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:opacity-90">
+                    Activate
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Stats */}
