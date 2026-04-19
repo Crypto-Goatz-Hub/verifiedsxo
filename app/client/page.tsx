@@ -7,7 +7,7 @@ import { ShieldCheck, LinkIcon, Sparkles, CheckCircle2, AlertTriangle } from "lu
 
 export const dynamic = "force-dynamic"
 
-interface Props { searchParams: Promise<{ gsc?: string; reason?: string }> }
+interface Props { searchParams: Promise<{ gsc?: string; li?: string; reason?: string }> }
 
 export default async function ClientDashboardPage({ searchParams }: Props) {
   const sp = await searchParams
@@ -86,6 +86,18 @@ export default async function ClientDashboardPage({ searchParams }: Props) {
               <span>Google OAuth didn&apos;t complete ({sp.reason || "unknown"}). Try again.</span>
             </div>
           )}
+          {sp.li === "connected" && (
+            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-sm text-emerald-600">
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>LinkedIn connected. Your verified claims can now be cross-linked to your profile.</span>
+            </div>
+          )}
+          {sp.li === "error" && (
+            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-sm text-rose-600">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>LinkedIn OAuth didn&apos;t complete ({sp.reason || "unknown"}). Try again.</span>
+            </div>
+          )}
 
           <section className="rounded-xl border border-border bg-card p-6 md:p-8 mb-6">
             <div className="flex items-start justify-between gap-4 mb-5">
@@ -119,6 +131,12 @@ export default async function ClientDashboardPage({ searchParams }: Props) {
                 connected={connected.has("gsc")}
                 account={connected.get("gsc")?.account_label}
                 connectHref="/api/oauth/gsc/start"
+              />
+              <ConnectionTile
+                name="LinkedIn"
+                connected={connected.has("linkedin")}
+                account={connected.get("linkedin")?.account_label}
+                connectHref="/api/oauth/linkedin/start"
               />
               {[
                 { name: "Google Analytics", key: "ga4" },
