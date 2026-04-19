@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomBytes } from "node:crypto"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
 import { upsertContact, sendEmailViaCrm } from "@/lib/crm"
+import { pingMike } from "@/lib/notify-mike"
 
 export const runtime = "nodejs"
 
@@ -116,6 +117,19 @@ export async function POST(req: NextRequest) {
   const mail = crm.id
     ? await sendEmailViaCrm({ contactId: crm.id, to: email, subject, html, text })
     : { ok: false, error: "no-crm-contact" as string }
+
+  pingMike({
+    event: "client.invited",
+    headline: `${agencyName} invited ${name}`,
+    fields: {
+      Agency: agencyName,
+      Client: `${name} <${email}>`,
+      Company: company || "—",
+      "Invite URL": inviteUrl,
+      "Email sent": mail.ok ? "yes" : `no (${(mail as { error?: string }).error || "?"})`,
+    },
+    link: `https://verifiedsxo.com/dashboard`,
+  })
 
   return NextResponse.json({
     clientId: clientRow.id,

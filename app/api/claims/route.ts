@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
+import { pingMike } from "@/lib/notify-mike"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -72,6 +73,20 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  pingMike({
+    event: "claim.scored",
+    headline: `Claim scored (${score ?? "—"}%): ${claimText.slice(0, 60)}`,
+    fields: {
+      "Claim type": claimType,
+      Score: score ?? "—",
+      Tier: tier,
+      "Client ID": client.id,
+      "Agency ID": client.agency_id,
+      "By user": user.email || user.id,
+    },
+    link: `https://verifiedsxo.com/dashboard`,
+  })
 
   return NextResponse.json({
     claimId: claim.id,

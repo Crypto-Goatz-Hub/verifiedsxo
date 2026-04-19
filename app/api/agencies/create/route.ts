@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
 import { upsertContact } from "@/lib/crm"
+import { pingMike } from "@/lib/notify-mike"
 
 export const runtime = "nodejs"
 
@@ -69,6 +70,18 @@ export async function POST(req: NextRequest) {
   if (crmContactId) {
     await admin.from("vsxo_agencies").update({ crm_contact_id: crmContactId }).eq("id", agency.id)
   }
+
+  pingMike({
+    event: "agency.signup",
+    headline: `New agency: ${name}`,
+    fields: {
+      Agency: name,
+      Slug: agency.slug,
+      Owner: user.email || user.id,
+      "CRM contact": crmContactId || "(not created)",
+    },
+    link: `https://verifiedsxo.com/dashboard`,
+  })
 
   return NextResponse.json({ id: agency.id, slug: agency.slug, crmContactId })
 }

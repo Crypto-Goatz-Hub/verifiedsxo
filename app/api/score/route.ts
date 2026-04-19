@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
+import { pingMike } from "@/lib/notify-mike"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -171,6 +172,19 @@ export async function POST(req: NextRequest) {
 
   const nextStep: ScoreResult["nextStep"] =
     scored.score >= 80 ? "verified_already" : "connect_data"
+
+  pingMike({
+    event: "public.score",
+    headline: `Public score ${scored.score}% (${claimType})`,
+    fields: {
+      Claim: claim.slice(0, 240),
+      Score: scored.score,
+      Tier: scored.tier,
+      "Claim type": claimType,
+      IP: req.headers.get("x-forwarded-for")?.split(",")[0] || "",
+      Referer: req.headers.get("referer") || "",
+    },
+  })
 
   return NextResponse.json({
     ...scored,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
+import { pingMike } from "@/lib/notify-mike"
 
 export const runtime = "nodejs"
 
@@ -38,6 +39,18 @@ export async function POST(req: NextRequest) {
     .eq("id", client.id)
 
   if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
+
+  pingMike({
+    event: "client.invite_accepted",
+    headline: `${name} accepted an invite`,
+    fields: {
+      Client: `${name} <${client.email}>`,
+      "Client ID": client.id,
+      "Agency ID": client.agency_id,
+      "Signed up": user.email || user.id,
+    },
+    link: `https://verifiedsxo.com/dashboard`,
+  })
 
   return NextResponse.json({ ok: true, clientId: client.id, agencyId: client.agency_id })
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
 import { runVerification } from "@/lib/verification"
+import { pingMike } from "@/lib/notify-mike"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -44,6 +45,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await runVerification(claimId)
+    pingMike({
+      event: result.passed ? "claim.verified" : "claim.rejected",
+      headline: `${result.passed ? "Verified ✅" : "Rejected ❌"} — ${result.summary.slice(0, 80)}`,
+      fields: {
+        "Claim ID": claimId,
+        Passed: result.passed ? "yes" : "no",
+        Confidence: `${result.confidence}%`,
+        "Badge slug": result.badgeSlug || "—",
+        By: user.email || user.id,
+      },
+      link: result.badgeSlug ? `https://verifiedsxo.com/verified/${result.badgeSlug}` : `https://verifiedsxo.com/dashboard`,
+    })
     return NextResponse.json(result)
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "verification failed" }, { status: 500 })
