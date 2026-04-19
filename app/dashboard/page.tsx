@@ -76,6 +76,7 @@ export default async function DashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               <Link href="/dashboard/claims"><Button variant="outline" size="sm">All claims</Button></Link>
+              <Link href="/account"><Button variant="outline" size="sm">Account</Button></Link>
               <form action="/api/auth/signout" method="POST">
                 <Button type="submit" variant="outline" size="sm">Sign out</Button>
               </form>
