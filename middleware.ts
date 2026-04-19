@@ -24,8 +24,12 @@ export async function middleware(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = req.nextUrl
 
-  // Gate /dashboard and /client behind auth
-  const needsAuth = pathname.startsWith("/dashboard") || pathname.startsWith("/client")
+  // Gate /dashboard, /client, /admin, /account behind auth
+  const needsAuth =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/client") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/account")
   if (needsAuth && !user) {
     const url = req.nextUrl.clone()
     url.pathname = "/login"
