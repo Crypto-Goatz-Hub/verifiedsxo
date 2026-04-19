@@ -173,9 +173,13 @@ export async function runVerification(claimId: string): Promise<{
     .single()
   if (vErr || !verification) throw new Error(`verification_store_failed: ${vErr?.message}`)
 
+  const now = new Date().toISOString()
   await admin
     .from("vsxo_claims")
-    .update({ status: out.passed ? "verified" : "rejected" })
+    .update({
+      status: out.passed ? "verified" : "rejected",
+      ...(out.passed ? { verified_at: now } : { rejected_at: now }),
+    })
     .eq("id", claim.id)
 
   let badgeSlug: string | undefined

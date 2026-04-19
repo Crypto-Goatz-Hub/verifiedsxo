@@ -74,9 +74,12 @@ export default async function DashboardPage() {
                 Plan: <span className="font-mono">{agency.plan}</span> · Signed in as {user.email}
               </p>
             </div>
-            <form action="/api/auth/signout" method="POST">
-              <Button type="submit" variant="outline" size="sm">Sign out</Button>
-            </form>
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard/claims"><Button variant="outline" size="sm">All claims</Button></Link>
+              <form action="/api/auth/signout" method="POST">
+                <Button type="submit" variant="outline" size="sm">Sign out</Button>
+              </form>
+            </div>
           </div>
 
           {/* Stats */}

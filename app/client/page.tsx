@@ -60,9 +60,12 @@ export default async function ClientDashboardPage({ searchParams }: Props) {
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Hey {clientRow.name}</h1>
               <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
             </div>
-            <form action="/api/auth/signout" method="POST">
-              <Button type="submit" variant="outline" size="sm">Sign out</Button>
-            </form>
+            <div className="flex items-center gap-2">
+              <Link href="/client/claims"><Button variant="outline" size="sm">My claims</Button></Link>
+              <form action="/api/auth/signout" method="POST">
+                <Button type="submit" variant="outline" size="sm">Sign out</Button>
+              </form>
+            </div>
           </div>
 
           {sp.gsc === "connected" && (
