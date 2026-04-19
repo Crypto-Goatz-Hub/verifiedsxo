@@ -2,8 +2,10 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
+import { checkAgencyDailyClaimLimit } from "@/lib/agency-claim-limit"
 import { Header } from "@/components/header"
 import { InvitePanel } from "./invite-panel"
+import { QuickClaim } from "./quick-claim"
 import { ShieldCheck, Users, Sparkles, PlusCircle } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -58,6 +60,7 @@ export default async function DashboardPage() {
 
   const clientCount = clients?.length || 0
   const activeCount = clients?.filter((c) => c.status === "active").length || 0
+  const limit = await checkAgencyDailyClaimLimit(agency.id)
 
   return (
     <>
@@ -121,12 +124,22 @@ export default async function DashboardPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <StatCard icon={Users} label="Clients" value={clientCount} />
             <StatCard icon={Sparkles} label="Active clients" value={activeCount} />
             <StatCard icon={Sparkles} label="Claims scored" value={totalClaims || 0} />
             <StatCard icon={ShieldCheck} label="Claims verified" value={verifiedCount || 0} />
           </div>
+
+          {/* Agency-side quick claim */}
+          <QuickClaim
+            clients={(clients || []).filter((c) => c.status === "active" || c.status === "invited").map((c) => ({
+              id: c.id, name: c.name, email: c.email, company: c.company,
+            }))}
+            unlimited={limit.unlimited}
+            used={limit.used}
+            dailyLimit={limit.limit}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
             {/* Clients list */}

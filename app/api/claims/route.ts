@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
 import { pingMike } from "@/lib/notify-mike"
+import { checkAgencyDailyClaimLimit } from "@/lib/agency-claim-limit"
 
 export const runtime = "nodejs"
 export const maxDuration = 30
@@ -35,6 +36,20 @@ export async function POST(req: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle()
   if (!client) return NextResponse.json({ error: "no client record" }, { status: 403 })
+
+  // Agency-scoped daily limit: free tier → 1/day; paid plan OR active
+  // public-profile membership → unlimited.
+  const limit = await checkAgencyDailyClaimLimit(client.agency_id)
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        error: "daily_limit_reached",
+        message: `Free tier is limited to ${limit.limit} claim per day. Upgrade to Pro or activate the $8/mo public profile membership for unlimited.`,
+        limit: { used: limit.used, limit: limit.limit, plan: limit.plan, membership_status: limit.membership_status },
+      },
+      { status: 429 }
+    )
+  }
 
   // Score inline via local /api/score
   const origin = new URL(req.url).origin
