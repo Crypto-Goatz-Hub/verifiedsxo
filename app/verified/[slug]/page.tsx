@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AnimatedGridBackground } from "@/components/animated-grid-background"
+import { DetectorShapes } from "@/components/detector-shapes"
 import { ShieldCheck, Calendar, LinkIcon } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -53,7 +54,8 @@ export default async function VerifiedPage({ params }: Props) {
       <Header />
 
       <main className="relative z-10 pt-28 pb-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
+        <DetectorShapes seed={99} count={6} intensity={0.4} blur={110} palette={[{ from: "#10b981", to: "#06b6d4" }, { from: "#22d3ee", to: "#8b5cf6" }]} />
+        <div className="relative z-10 max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 text-sm font-medium mb-5">
               <ShieldCheck className="w-4 h-4" />

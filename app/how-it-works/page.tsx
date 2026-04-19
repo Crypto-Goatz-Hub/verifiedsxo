@@ -2,6 +2,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AnimatedGridBackground } from "@/components/animated-grid-background"
 import { AnimatedSection } from "@/components/animated-section"
+import { DetectorShapes } from "@/components/detector-shapes"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Brain, LinkIcon, ShieldCheck, Award, Lock, Database, Clock } from "lucide-react"
@@ -57,7 +58,8 @@ export default function Page() {
       <AnimatedGridBackground />
       <Header />
       <main className="relative z-10 pt-28 pb-24 px-4 sm:px-6 lg:px-8">
-        <section className="max-w-4xl mx-auto text-center mb-20">
+        <DetectorShapes seed={9} count={7} intensity={0.4} blur={120} />
+        <section className="relative z-10 max-w-4xl mx-auto text-center mb-20">
           <AnimatedSection>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium mb-6">
               <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />

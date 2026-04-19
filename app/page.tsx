@@ -3,8 +3,10 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AnimatedGridBackground } from "@/components/animated-grid-background"
 import { AnimatedSection } from "@/components/animated-section"
-import { BsScanner } from "@/components/bs-scanner"
-import { ArrowRight, ShieldCheck, Brain, LinkIcon, Award } from "lucide-react"
+import { RadarBackground } from "@/components/radar-background"
+import { DetectorShapes } from "@/components/detector-shapes"
+import { BsInput } from "@/components/bs-input"
+import { ArrowRight, ShieldCheck, Brain, LinkIcon, Award, Users } from "lucide-react"
 import Link from "next/link"
 
 export default function Home() {
@@ -14,31 +16,16 @@ export default function Home() {
       <Header />
 
       <main className="relative z-10">
-        {/* Hero */}
-        <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-          {/* floating orbs */}
-          <div
-            className="absolute top-20 right-10 w-96 h-96 bg-foreground/5 rounded-full blur-3xl animate-float pointer-events-none"
-            aria-hidden
-          />
-          <div
-            className="absolute bottom-0 left-10 w-64 h-64 bg-foreground/3 rounded-full blur-3xl animate-float pointer-events-none"
-            style={{ animationDelay: "2s" }}
-            aria-hidden
-          />
+        {/* Hero — radar runs full-width as the section backdrop */}
+        <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28 px-4 sm:px-6 lg:px-8">
+          <RadarBackground opacity={0.45} />
+          <DetectorShapes seed={11} count={4} intensity={0.45} blur={110} />
 
           <div className="max-w-5xl mx-auto text-center relative z-10">
             <AnimatedSection>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background/80 backdrop-blur text-secondary-foreground text-sm font-medium mb-8 border border-border">
                 <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
                 The proof layer for marketers
-              </div>
-            </AnimatedSection>
-
-            {/* BS Scanner — lives directly above the H1 */}
-            <AnimatedSection delay={50}>
-              <div id="verify" className="mb-16 scroll-mt-24">
-                <BsScanner />
               </div>
             </AnimatedSection>
 
@@ -54,39 +41,74 @@ export default function Home() {
 
             <AnimatedSection delay={200}>
               <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-                Paste any marketing claim — "I made $100K in a week," "I rank #1 for my keyword,"
-                "I built 5 SaaS apps last month." We score its plausibility, then give you a path
+                Paste any marketing claim — &quot;I made $100K in a week,&quot; &quot;I rank #1 for my keyword,&quot;
+                &quot;I built 5 SaaS apps last month.&quot; We score its plausibility, then give you a path
                 to <span className="text-foreground font-semibold">actually prove it</span> with
                 your own analytics. Earn a badge that lives next to your stat forever.
               </p>
             </AnimatedSection>
 
+            {/* "Wondering if..." input — below the title + subtitle */}
             <AnimatedSection delay={300}>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
-                <Link href="#verify">
-                  <Button
-                    size="lg"
-                    className="gap-2 group bg-foreground text-background hover:bg-foreground/90 transition-all duration-300 hover:shadow-lg hover:shadow-foreground/20"
-                  >
-                    Verify a claim free
-                    <ArrowRight className="transition-transform group-hover:translate-x-1" />
-                  </Button>
+              <div id="verify" className="mb-12 scroll-mt-24">
+                <BsInput />
+              </div>
+            </AnimatedSection>
+
+            {/* 3:2 CTA cards — "Verify a claim" (3) · "I'm an agency" (2) */}
+            <AnimatedSection delay={400}>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-5 max-w-4xl mx-auto text-left">
+                <Link
+                  href="/signup"
+                  className="md:col-span-3 group relative rounded-2xl border border-border bg-card/85 backdrop-blur-xl p-7 overflow-hidden hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-500/10 transition-all"
+                >
+                  <DetectorShapes seed={33} count={3} intensity={0.35} blur={60} />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
+                        <ShieldCheck className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">For marketers</span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-2">Verify a claim</h3>
+                    <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                      Connect your analytics, prove the real number, earn a badge you can embed on your site.
+                      Turn your stat into a public case study.
+                    </p>
+                    <div className="inline-flex items-center gap-1.5 text-sm font-semibold">
+                      Start verifying
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
                 </Link>
-                <Link href="/for-agencies">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="group bg-transparent border-border hover:border-foreground/50 hover:bg-foreground/5 transition-all duration-300"
-                  >
-                    I&apos;m an agency
-                    <ArrowRight className="ml-2 opacity-0 transition-all group-hover:opacity-100" />
-                  </Button>
+
+                <Link
+                  href="/for-agencies"
+                  className="md:col-span-2 group relative rounded-2xl border border-border bg-card/85 backdrop-blur-xl p-7 overflow-hidden hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10 transition-all"
+                >
+                  <DetectorShapes seed={77} count={3} intensity={0.35} blur={60} palette={[{ from: "#06b6d4", to: "#8b5cf6" }, { from: "#22d3ee", to: "#a5f3fc" }]} />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">For agencies</span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-bold tracking-tight mb-2">I&apos;m an agency</h3>
+                    <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                      Invite every client. Automate verification. Compound your reputation with each win.
+                    </p>
+                    <div className="inline-flex items-center gap-1.5 text-sm font-semibold">
+                      See the dashboard
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
                 </Link>
               </div>
             </AnimatedSection>
 
-            <AnimatedSection delay={400}>
-              <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-10 border-t border-border/50 text-left sm:text-center">
+            <AnimatedSection delay={500}>
+              <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-14 mt-14 border-t border-border/50 text-center">
                 <div>
                   <div className="text-2xl sm:text-3xl font-bold">25 yrs</div>
                   <div className="text-xs text-muted-foreground mt-1">Marketing data corpus</div>
@@ -105,11 +127,9 @@ export default function Home() {
         </section>
 
         {/* How it works */}
-        <section
-          id="how-it-works"
-          className="py-24 px-4 sm:px-6 lg:px-8 scroll-mt-20 relative"
-        >
-          <div className="max-w-6xl mx-auto">
+        <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8 scroll-mt-20 relative overflow-hidden">
+          <DetectorShapes seed={21} count={5} intensity={0.3} blur={100} />
+          <div className="max-w-6xl mx-auto relative z-10">
             <AnimatedSection>
               <div className="text-center mb-16">
                 <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
@@ -123,35 +143,15 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                {
-                  icon: Brain,
-                  step: "01",
-                  title: "Plausibility score",
-                  desc: "Your claim is weighed against 25 years of marketing benchmarks. You get a % likelihood + reasoning in under 60 seconds.",
-                },
-                {
-                  icon: LinkIcon,
-                  step: "02",
-                  title: "Connect the data",
-                  desc: "Think the score is too low? Connect your Google Analytics, Search Console, Ads, or Stripe with one click.",
-                },
-                {
-                  icon: ShieldCheck,
-                  step: "03",
-                  title: "We verify the numbers",
-                  desc: "We pull the real metrics from your live accounts and compare to your claim. No guesswork, no self-reporting.",
-                },
-                {
-                  icon: Award,
-                  step: "04",
-                  title: "Get your badge",
-                  desc: "A tamper-resistant script you embed on your site. Links to a case-study page we host with the evidence.",
-                },
+                { icon: Brain,      step: "01", title: "Plausibility score", desc: "Your claim is weighed against 25 years of marketing benchmarks. You get a % likelihood + reasoning in under 60 seconds." },
+                { icon: LinkIcon,   step: "02", title: "Connect the data",   desc: "Think the score is too low? Connect your Google Analytics, Search Console, Ads, or Stripe with one click." },
+                { icon: ShieldCheck, step: "03", title: "We verify the numbers", desc: "We pull the real metrics from your live accounts and compare to your claim. No guesswork, no self-reporting." },
+                { icon: Award,      step: "04", title: "Get your badge",     desc: "A tamper-resistant script you embed on your site. Links to a case-study page we host with the evidence." },
               ].map((s, i) => (
                 <AnimatedSection key={s.step} delay={i * 100}>
-                  <div className="p-6 rounded-xl border border-border bg-card h-full transition-all duration-500 hover:border-foreground/20 hover:shadow-lg hover:shadow-foreground/5 group">
+                  <div className="p-6 rounded-xl border border-border bg-card/80 backdrop-blur-xl h-full transition-all duration-500 hover:border-foreground/20 hover:shadow-lg hover:shadow-foreground/5 group">
                     <div className="flex items-center justify-between mb-5">
-                      <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <s.icon className="w-5 h-5" />
                       </div>
                       <span className="text-xs text-muted-foreground font-mono">{s.step}</span>
@@ -167,7 +167,8 @@ export default function Home() {
 
         {/* Why */}
         <section className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-          <div className="max-w-4xl mx-auto text-center">
+          <DetectorShapes seed={42} count={4} intensity={0.25} blur={130} palette={[{ from: "#a78bfa", to: "#22d3ee" }]} />
+          <div className="max-w-4xl mx-auto text-center relative z-10">
             <AnimatedSection>
               <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
                 Why it matters
@@ -188,14 +189,12 @@ export default function Home() {
         </section>
 
         {/* Agency CTA */}
-        <section className="py-24 px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-5xl mx-auto">
+        <section className="py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+          <DetectorShapes seed={64} count={6} intensity={0.4} blur={80} />
+          <div className="max-w-5xl mx-auto relative z-10">
             <AnimatedSection>
-              <div className="rounded-2xl border border-border bg-card p-10 md:p-16 relative overflow-hidden">
-                <div
-                  className="absolute -top-20 -right-20 w-80 h-80 bg-gradient-to-br from-violet-500/10 to-cyan-500/10 rounded-full blur-3xl pointer-events-none"
-                  aria-hidden
-                />
+              <div className="rounded-2xl border border-border bg-card/85 backdrop-blur-xl p-10 md:p-16 relative overflow-hidden">
+                <DetectorShapes seed={12} count={3} intensity={0.3} blur={90} />
                 <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
                   <div>
                     <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">

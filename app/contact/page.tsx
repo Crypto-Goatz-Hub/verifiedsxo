@@ -1,6 +1,7 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AnimatedGridBackground } from "@/components/animated-grid-background"
+import { DetectorShapes } from "@/components/detector-shapes"
 import { ContactForm } from "./contact-form"
 
 export const metadata = {
@@ -15,7 +16,8 @@ export default function Page() {
       <AnimatedGridBackground />
       <Header />
       <main className="relative z-10 pt-28 pb-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-xl mx-auto">
+        <DetectorShapes seed={17} count={5} intensity={0.4} blur={120} />
+        <div className="relative z-10 max-w-xl mx-auto">
           <div className="text-center mb-10">
             <div className="text-sm text-muted-foreground uppercase tracking-wider mb-2">Contact</div>
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">Talk to us</h1>
