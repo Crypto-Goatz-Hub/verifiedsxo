@@ -2,7 +2,8 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
-import { Header } from "@/components/header"
+import { AppShell } from "@/components/app-shell"
+import { clientNav } from "@/lib/nav"
 import { ShieldCheck, LinkIcon, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -48,166 +49,174 @@ export default async function ClientDashboardPage({ searchParams }: Props) {
     .limit(5)
 
   return (
-    <>
-      <Header />
-      <main className="pt-28 pb-24 px-4 sm:px-6 lg:px-8 min-h-screen">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
-            <div>
-              <div className="text-sm text-muted-foreground uppercase tracking-wider mb-2">
-                Verified client · invited by {agencyName}
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Hey {clientRow.name}</h1>
-              <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+    <AppShell
+      subtitle={`Invited by ${agencyName}`}
+      title={`Hey ${clientRow.name}`}
+      groups={clientNav("/client", { claims: claims?.length || 0 })}
+      topRight={
+        <div className="flex items-center gap-2">
+          <Link href="/client/verify"><Button size="sm" className="bg-foreground text-background hover:bg-foreground/90">Verify a claim</Button></Link>
+          <form action="/api/auth/signout" method="POST">
+            <Button type="submit" variant="outline" size="sm">Sign out</Button>
+          </form>
+        </div>
+      }
+      footerBlurb={
+        <>
+          Free forever. Your agency can verify claims on your behalf. Connect data sources to prove your own.
+        </>
+      }
+    >
+      <p className="text-sm text-muted-foreground -mt-4 mb-6">{user.email}</p>
+
+      {sp.gsc === "connected" && (
+        <Banner tone="ok" icon={<CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />}>
+          Search Console connected. You can verify ranking + traffic claims now.
+        </Banner>
+      )}
+      {sp.gsc === "required" && (
+        <Banner tone="warn" icon={<AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}>
+          Connect Google Search Console first so we have data to verify against.
+        </Banner>
+      )}
+      {sp.gsc === "error" && (
+        <Banner tone="err" icon={<AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}>
+          Google OAuth didn&apos;t complete ({sp.reason || "unknown"}). Try again.
+        </Banner>
+      )}
+      {sp.li === "connected" && (
+        <Banner tone="ok" icon={<CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />}>
+          LinkedIn connected. Your verified claims can now be cross-linked to your profile.
+        </Banner>
+      )}
+      {sp.li === "error" && (
+        <Banner tone="err" icon={<AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}>
+          LinkedIn OAuth didn&apos;t complete ({sp.reason || "unknown"}). Try again.
+        </Banner>
+      )}
+
+      <section className="rounded-xl border border-border bg-card p-6 md:p-8 mb-6">
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-2">
-              <Link href="/client/claims"><Button variant="outline" size="sm">My claims</Button></Link>
-              <form action="/api/auth/signout" method="POST">
-                <Button type="submit" variant="outline" size="sm">Sign out</Button>
-              </form>
+            <div>
+              <h2 className="font-semibold text-lg">Verify your next claim</h2>
+              <p className="text-sm text-muted-foreground">
+                Pick the claim type, connect the source, and we&apos;ll verify it in seconds.
+              </p>
             </div>
           </div>
-
-          {sp.gsc === "connected" && (
-            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-sm text-emerald-600">
-              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>Search Console connected. You can verify ranking + traffic claims now.</span>
-            </div>
-          )}
-          {sp.gsc === "required" && (
-            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-700">
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>Connect Google Search Console first so we have data to verify against.</span>
-            </div>
-          )}
-          {sp.gsc === "error" && (
-            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-sm text-rose-600">
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>Google OAuth didn&apos;t complete ({sp.reason || "unknown"}). Try again.</span>
-            </div>
-          )}
-          {sp.li === "connected" && (
-            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-sm text-emerald-600">
-              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>LinkedIn connected. Your verified claims can now be cross-linked to your profile.</span>
-            </div>
-          )}
-          {sp.li === "error" && (
-            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-sm text-rose-600">
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>LinkedIn OAuth didn&apos;t complete ({sp.reason || "unknown"}). Try again.</span>
-            </div>
-          )}
-
-          <section className="rounded-xl border border-border bg-card p-6 md:p-8 mb-6">
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-lg">Verify your next claim</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Pick the claim type, connect the source, and we&apos;ll verify it in seconds.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg" className="bg-foreground text-background hover:bg-foreground/90">
-                <Link href="/client/verify">Verify a claim</Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/#verify">Just score one (no proof)</Link>
-              </Button>
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-border bg-card p-6 md:p-8 mb-6">
-            <h2 className="font-semibold mb-4">Data connections</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <ConnectionTile
-                name="Search Console"
-                connected={connected.has("gsc")}
-                account={connected.get("gsc")?.account_label}
-                connectHref="/api/oauth/gsc/start"
-              />
-              <ConnectionTile
-                name="LinkedIn"
-                connected={connected.has("linkedin")}
-                account={connected.get("linkedin")?.account_label}
-                connectHref="/api/oauth/linkedin/start"
-              />
-              {[
-                { name: "Google Analytics", key: "ga4" },
-                { name: "Google Ads", key: "google_ads" },
-                { name: "Stripe", key: "stripe" },
-              ].map((p) => (
-                <div key={p.key} className="p-4 rounded-lg border border-border bg-background text-center">
-                  <LinkIcon className="w-4 h-4 mx-auto mb-2 text-muted-foreground" />
-                  <div className="text-sm font-medium">{p.name}</div>
-                  <div className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Coming soon</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {badges && badges.length > 0 && (
-            <section className="rounded-xl border border-border bg-card p-6 md:p-8 mb-6">
-              <h2 className="font-semibold mb-4 flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                Your verification badges
-              </h2>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {badges.map((b) => (
-                  <li key={b.slug} className="p-4 rounded-lg border border-border bg-background flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-mono text-muted-foreground">{b.slug}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{new Date(b.last_verified_at).toLocaleDateString()}</div>
-                    </div>
-                    <Link href={`/verified/${b.slug}`} className="text-sm text-violet-500 hover:text-cyan-500 underline underline-offset-2">
-                      View
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section className="rounded-xl border border-border bg-card">
-            <div className="p-5 border-b border-border">
-              <h2 className="font-semibold">Your claims</h2>
-              <p className="text-xs text-muted-foreground">Claims you&apos;ve submitted and their verification status.</p>
-            </div>
-            {claims && claims.length > 0 ? (
-              <ul className="divide-y divide-border">
-                {claims.map((c) => (
-                  <li key={c.id} className="p-5">
-                    <div className="flex items-center justify-between gap-4 mb-2">
-                      <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-                        {c.claim_type} · {c.plausibility_tier || "—"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(c.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <p className="text-sm mb-3">&ldquo;{c.claim_text}&rdquo;</p>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold">{c.plausibility_score ?? "—"}%</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground">{c.status}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="p-10 text-center text-sm text-muted-foreground">
-                No claims yet — <Link href="/client/verify" className="underline">verify your first one</Link>.
-              </div>
-            )}
-          </section>
         </div>
-      </main>
-    </>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild size="lg" className="bg-foreground text-background hover:bg-foreground/90">
+            <Link href="/client/verify">Verify a claim</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <Link href="/#verify">Just score one (no proof)</Link>
+          </Button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-6 md:p-8 mb-6">
+        <h2 className="font-semibold mb-4">Data connections</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <ConnectionTile
+            name="Search Console"
+            connected={connected.has("gsc")}
+            account={connected.get("gsc")?.account_label}
+            connectHref="/api/oauth/gsc/start"
+          />
+          <ConnectionTile
+            name="LinkedIn"
+            connected={connected.has("linkedin")}
+            account={connected.get("linkedin")?.account_label}
+            connectHref="/api/oauth/linkedin/start"
+          />
+          {[
+            { name: "Google Analytics", key: "ga4" },
+            { name: "Google Ads", key: "google_ads" },
+            { name: "Stripe", key: "stripe" },
+          ].map((p) => (
+            <div key={p.key} className="p-4 rounded-lg border border-border bg-background text-center">
+              <LinkIcon className="w-4 h-4 mx-auto mb-2 text-muted-foreground" />
+              <div className="text-sm font-medium">{p.name}</div>
+              <div className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Coming soon</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {badges && badges.length > 0 && (
+        <section className="rounded-xl border border-border bg-card p-6 md:p-8 mb-6">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            Your verification badges
+          </h2>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {badges.map((b) => (
+              <li key={b.slug} className="p-4 rounded-lg border border-border bg-background flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-mono text-muted-foreground">{b.slug}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{new Date(b.last_verified_at).toLocaleDateString()}</div>
+                </div>
+                <Link href={`/verified/${b.slug}`} className="text-sm text-violet-500 hover:text-cyan-500 underline underline-offset-2">
+                  View
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="rounded-xl border border-border bg-card">
+        <div className="p-5 border-b border-border">
+          <h2 className="font-semibold">Your claims</h2>
+          <p className="text-xs text-muted-foreground">Claims you&apos;ve submitted and their verification status.</p>
+        </div>
+        {claims && claims.length > 0 ? (
+          <ul className="divide-y divide-border">
+            {claims.map((c) => (
+              <li key={c.id} className="p-5">
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                    {c.claim_type} · {c.plausibility_tier || "—"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(c.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+                <p className="text-sm mb-3">&ldquo;{c.claim_text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold">{c.plausibility_score ?? "—"}%</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground">{c.status}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            No claims yet — <Link href="/client/verify" className="underline">verify your first one</Link>.
+          </div>
+        )}
+      </section>
+    </AppShell>
+  )
+}
+
+function Banner({ tone, icon, children }: { tone: "ok" | "warn" | "err"; icon: React.ReactNode; children: React.ReactNode }) {
+  const cls =
+    tone === "ok"
+      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
+      : tone === "warn"
+        ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-700"
+        : "bg-rose-500/10 border-rose-500/30 text-rose-600"
+  return (
+    <div className={`mb-6 flex items-start gap-2 p-3 rounded-lg border text-sm ${cls}`}>
+      {icon}
+      <span>{children}</span>
+    </div>
   )
 }
 
