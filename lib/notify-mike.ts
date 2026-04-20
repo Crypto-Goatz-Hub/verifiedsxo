@@ -18,6 +18,7 @@ interface NotifyArgs {
     | "claim.scored"
     | "claim.verified"
     | "claim.rejected"
+    | "claim.researched"
     | "contact.submitted"
     | "public.score"
   subject?: string

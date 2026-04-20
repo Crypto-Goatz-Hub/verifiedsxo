@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { buildTimeline, STATUS_META, type ClaimStatus } from "@/lib/claims"
 import { EvidenceUploader } from "@/components/evidence-uploader"
 import { ElevateButton } from "@/components/elevate-button"
+import { ResearchPanel } from "@/components/research-panel"
 import { ShieldCheck, ArrowLeft } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -22,10 +23,12 @@ export default async function AgencyClaimDetailPage({ params }: Props) {
   const admin = getSupabaseAdmin()
   const { data: agency } = await admin
     .from("vsxo_agencies")
-    .select("id, name")
+    .select("id, name, plan, membership_status")
     .eq("owner_user_id", user.id)
     .maybeSingle()
   if (!agency) redirect("/signup")
+
+  const canDeep = agency.plan !== "free" || agency.membership_status === "active"
 
   const { data: claim } = await admin
     .from("vsxo_claims")
@@ -52,6 +55,12 @@ export default async function AgencyClaimDetailPage({ params }: Props) {
     .select("slug, last_verified_at, public_visible, embed_count")
     .eq("claim_id", id)
     .maybeSingle()
+
+  const { data: citations } = await admin
+    .from("vsxo_claim_citations")
+    .select("url, title, snippet, source, relevance, stance, fetched_ok")
+    .eq("claim_id", id)
+    .order("relevance", { ascending: false })
 
   const status = (claim.status as ClaimStatus) || "scored"
   const timeline = buildTimeline({
@@ -156,6 +165,14 @@ export default async function AgencyClaimDetailPage({ params }: Props) {
               </ul>
             </section>
           )}
+
+          <ResearchPanel
+            claimId={claim.id}
+            initial={claim.research || null}
+            initialCitations={citations || []}
+            ranAt={claim.research_ran_at || null}
+            canDeep={canDeep}
+          />
 
           <EvidenceUploader claimId={claim.id} editable={true} />
 
