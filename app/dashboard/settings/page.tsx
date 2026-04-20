@@ -16,7 +16,7 @@ export default async function AgencySettingsPage() {
   const admin = getSupabaseAdmin()
   const { data: agency } = await admin
     .from("vsxo_agencies")
-    .select("id, name, slug, plan, tagline, description, public_profile_enabled, membership_status, created_at, owner_user_id")
+    .select("id, name, slug, plan, tagline, description, website, domain_verified, domain_verified_at, domain_verified_email, public_profile_enabled, membership_status, created_at, owner_user_id")
     .eq("owner_user_id", user.id)
     .order("created_at", { ascending: true })
     .limit(1)
@@ -45,10 +45,16 @@ export default async function AgencySettingsPage() {
             name: agency.name,
             tagline: agency.tagline || "",
             description: agency.description || "",
+            website: agency.website || "",
             public_profile_enabled: !!agency.public_profile_enabled,
           }}
           canPublish={agency.membership_status === "active"}
           publicSlug={agency.slug}
+          domain={{
+            verified: !!agency.domain_verified,
+            verifiedAt: agency.domain_verified_at,
+            verifiedEmail: agency.domain_verified_email,
+          }}
         />
 
         <aside className="space-y-4">

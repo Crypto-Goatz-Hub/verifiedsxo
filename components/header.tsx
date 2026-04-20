@@ -20,6 +20,12 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
+            <Link href="/wall" className="text-sm font-medium hover:text-foreground transition-all duration-200 hover:translate-y-[-1px] inline-flex items-center gap-1.5 text-violet-500">
+              <span className="relative">
+                Claims wall
+                <span className="absolute -top-0.5 -right-2 w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+              </span>
+            </Link>
             <Link href="/how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-all duration-200 hover:translate-y-[-1px]">
               How it works
             </Link>
@@ -55,6 +61,9 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border/50 animate-fade-in-down">
             <div className="flex flex-col gap-4">
+              <Link href="/wall" className="text-sm font-medium text-violet-500 hover:text-foreground transition-colors" onClick={() => setMobileMenuOpen(false)}>
+                Claims wall
+              </Link>
               <Link href="/how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors" onClick={() => setMobileMenuOpen(false)}>
                 How it works
               </Link>

@@ -46,29 +46,50 @@ export async function GET(
   const { slug } = await params
   if (!slug || !/^[a-z0-9-]+$/.test(slug)) return notFoundJs(slug)
 
-  const admin = getSupabaseAdmin()
-  const { data: badge } = await admin
-    .from("vsxo_badges")
-    .select("id, slug, claim_id, verification_id, last_verified_at, embed_count, public_visible")
-    .eq("slug", slug)
-    .eq("public_visible", true)
-    .maybeSingle()
-  if (!badge) return notFoundJs(slug)
+  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://verifiedsxo.com"
+  let badgeSlug = slug
+  let claim: { claim_text: string; claim_type: string; status: string } | null = null
+  let verification: { evidence: unknown; passed: boolean; confidence: number; verified_at: string } | null = null
 
-  const [claimRes, verRes] = await Promise.all([
-    admin.from("vsxo_claims").select("claim_text, claim_type, status").eq("id", badge.claim_id).single(),
-    admin.from("vsxo_verifications").select("evidence, passed, confidence, verified_at").eq("id", badge.verification_id).single(),
-  ])
-  const claim = claimRes.data
-  const verification = verRes.data
-  if (!claim || !verification) return notFoundJs(slug)
+  if (slug === "example") {
+    // Synthetic demo payload so /badge-examples always renders a live badge
+    // even on fresh installs where no public badge exists yet.
+    claim = {
+      claim_text: "We ranked #1 on Google for our primary keyword within 90 days.",
+      claim_type: "ranking",
+      status: "verified",
+    }
+    verification = {
+      evidence: { summary: "Google Search Console: position 1 for primary keyword, 90-day sample." },
+      passed: true,
+      confidence: 95,
+      verified_at: new Date().toISOString(),
+    }
+  } else {
+    const admin = getSupabaseAdmin()
+    const { data: badge } = await admin
+      .from("vsxo_badges")
+      .select("id, slug, claim_id, verification_id, last_verified_at, embed_count, public_visible")
+      .eq("slug", slug)
+      .eq("public_visible", true)
+      .maybeSingle()
+    if (!badge) return notFoundJs(slug)
 
-  // Fire and forget: bump embed count
-  admin.from("vsxo_badges").update({ embed_count: (badge.embed_count || 0) + 1 }).eq("id", badge.id).then(() => {})
+    const [claimRes, verRes] = await Promise.all([
+      admin.from("vsxo_claims").select("claim_text, claim_type, status").eq("id", badge.claim_id).single(),
+      admin.from("vsxo_verifications").select("evidence, passed, confidence, verified_at").eq("id", badge.verification_id).single(),
+    ])
+    claim = claimRes.data as typeof claim
+    verification = verRes.data as typeof verification
+    if (!claim || !verification) return notFoundJs(slug)
+
+    // Fire and forget: bump embed count
+    admin.from("vsxo_badges").update({ embed_count: (badge.embed_count || 0) + 1 }).eq("id", badge.id).then(() => {})
+    badgeSlug = badge.slug
+  }
 
   const evidence = (verification.evidence as Record<string, unknown>) || {}
-  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://verifiedsxo.com"
-  const page = `${site}/verified/${badge.slug}`
+  const page = `${site}/verified/${badgeSlug}`
   const verifiedLabel = new Date(verification.verified_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })
   const elevated = claim.status === "elevated"
   const claimSnippet = String(evidence.summary || claim.claim_text).slice(0, 140)
@@ -76,7 +97,7 @@ export async function GET(
   // JS payload
   const js = `(function(){
   var DATA = ${JSON.stringify({
-    slug: badge.slug,
+    slug: badgeSlug,
     page,
     verifiedLabel,
     elevated,
