@@ -3,6 +3,8 @@ import Link from "next/link"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
 import { AppShell } from "@/components/app-shell"
 import { clientNav } from "@/lib/nav"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { ShieldCheck, Search, ArrowRight } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -67,12 +69,12 @@ export default async function ClientDirectoryPage({ searchParams }: Props) {
       </p>
 
       <form action="/client/directory" method="GET" className="relative mb-6">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+        <Input
           name="q"
           defaultValue={q}
-          placeholder="Search by name, specialty, or outcome (e.g. &ldquo;SEO&rdquo;, &ldquo;SaaS&rdquo;, &ldquo;cold email&rdquo;)"
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-card focus:border-foreground/30 outline-none text-sm"
+          placeholder='Search by name, specialty, or outcome (e.g. "SEO", "SaaS", "cold email")'
+          className="h-12 pl-10 text-sm bg-card"
         />
       </form>
 
@@ -88,9 +90,9 @@ export default async function ClientDirectoryPage({ searchParams }: Props) {
                     {a.tagline && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.tagline}</p>}
                   </div>
                   {verifiedCount > 0 && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-full">
-                      <ShieldCheck className="w-3 h-3" /> {verifiedCount} verified
-                    </span>
+                    <Badge variant="success" className="uppercase tracking-wider">
+                      <ShieldCheck /> {verifiedCount} verified
+                    </Badge>
                   )}
                 </div>
                 {a.description && <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 mb-3">{a.description}</p>}

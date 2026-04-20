@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
 import { AppShell } from "@/components/app-shell"
 import { clientNav } from "@/lib/nav"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { ShieldCheck, LinkIcon, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -190,7 +192,7 @@ export default async function ClientDashboardPage({ searchParams }: Props) {
                 <p className="text-sm mb-3">&ldquo;{c.claim_text}&rdquo;</p>
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold">{c.plausibility_score ?? "—"}%</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground">{c.status}</span>
+                  <Badge variant="outline">{c.status}</Badge>
                 </div>
               </li>
             ))}
@@ -206,17 +208,12 @@ export default async function ClientDashboardPage({ searchParams }: Props) {
 }
 
 function Banner({ tone, icon, children }: { tone: "ok" | "warn" | "err"; icon: React.ReactNode; children: React.ReactNode }) {
-  const cls =
-    tone === "ok"
-      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
-      : tone === "warn"
-        ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-700"
-        : "bg-rose-500/10 border-rose-500/30 text-rose-600"
+  const variant = tone === "ok" ? "success" : tone === "warn" ? "warning" : "destructive"
   return (
-    <div className={`mb-6 flex items-start gap-2 p-3 rounded-lg border text-sm ${cls}`}>
+    <Alert variant={variant} className="mb-6">
       {icon}
-      <span>{children}</span>
-    </div>
+      <AlertDescription>{children}</AlertDescription>
+    </Alert>
   )
 }
 

@@ -4,6 +4,12 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle2, AlertTriangle, Loader2 } from "lucide-react"
 
 interface Props {
@@ -49,100 +55,94 @@ export function SettingsForm({ agencyId, initial, canPublish, publicSlug }: Prop
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6 md:p-8">
-      <div className="space-y-5">
-        <Field label="Agency name" hint="Shown on your public profile, badges, and certificates.">
-          <input
+    <section className="rounded-xl border bg-card p-6 md:p-8">
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="agency-name">Agency name</Label>
+          <p className="text-xs text-muted-foreground">Shown on your public profile, badges, and certificates.</p>
+          <Input
+            id="agency-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-border bg-background focus:border-foreground/30 outline-none text-sm"
             placeholder="e.g. Northwind Growth"
             maxLength={80}
           />
-        </Field>
+        </div>
 
-        <Field label="Tagline" hint="One-liner. 160 characters max.">
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="agency-tagline">Tagline</Label>
+          <p className="text-xs text-muted-foreground">One-liner. 160 characters max.</p>
+          <Input
+            id="agency-tagline"
             value={tagline}
             onChange={(e) => setTagline(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-border bg-background focus:border-foreground/30 outline-none text-sm"
             placeholder='e.g. "Verified growth marketing for B2B SaaS."'
             maxLength={160}
           />
-          <div className="text-[11px] text-muted-foreground mt-1">{tagline.length}/160</div>
-        </Field>
+          <div className="text-[11px] text-muted-foreground tabular-nums">{tagline.length}/160</div>
+        </div>
 
-        <Field label="Description" hint="A paragraph about what your agency does best.">
-          <textarea
+        <div className="space-y-2">
+          <Label htmlFor="agency-description">Description</Label>
+          <p className="text-xs text-muted-foreground">A paragraph about what your agency does best.</p>
+          <Textarea
+            id="agency-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2.5 rounded-lg border border-border bg-background focus:border-foreground/30 outline-none text-sm resize-y"
             placeholder="We verify marketing claims for B2B SaaS teams using first-party analytics."
             maxLength={2000}
           />
-          <div className="text-[11px] text-muted-foreground mt-1">{description.length}/2000</div>
-        </Field>
+          <div className="text-[11px] text-muted-foreground tabular-nums">{description.length}/2000</div>
+        </div>
 
-        <div className={`rounded-lg border p-4 ${canPublish ? "border-border bg-background" : "border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-cyan-500/5"}`}>
+        <Separator />
+
+        <div className={`rounded-lg border p-4 ${canPublish ? "" : "border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-cyan-500/5"}`}>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex-1 min-w-[240px]">
-              <div className="text-sm font-medium mb-0.5">Public profile page</div>
-              <p className="text-xs text-muted-foreground">
+              <Label htmlFor="public-toggle" className="text-sm font-medium">Public profile page</Label>
+              <p className="text-xs text-muted-foreground mt-1">
                 {canPublish
                   ? <>Live at <span className="font-mono">verifiedsxo.com/u/{publicSlug}</span></>
                   : "Requires the $8/mo membership. Unlocks public page + LinkedIn badge + embed snippets."}
               </p>
             </div>
             {canPublish ? (
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={publicEnabled}
-                  onChange={(e) => setPublicEnabled(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                Show profile publicly
-              </label>
+              <Switch
+                id="public-toggle"
+                checked={publicEnabled}
+                onCheckedChange={setPublicEnabled}
+              />
             ) : (
-              <Link href="/api/stripe/checkout?plan=membership">
-                <Button size="sm" className="bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:opacity-90">
-                  Activate
-                </Button>
-              </Link>
+              <Button asChild size="sm" className="bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:opacity-90">
+                <Link href="/api/stripe/checkout?plan=membership">Activate</Link>
+              </Button>
             )}
           </div>
         </div>
 
         {err && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-sm text-rose-600">
-            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{err}</span>
-          </div>
+          <Alert variant="destructive">
+            <AlertTriangle />
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
         )}
         {ok && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-sm text-emerald-600">
-            <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>Saved.</span>
-          </div>
+          <Alert variant="success">
+            <CheckCircle2 />
+            <AlertDescription>Saved.</AlertDescription>
+          </Alert>
         )}
 
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
-          <Button onClick={save} disabled={loading || name.trim().length < 2} className="bg-foreground text-background hover:bg-foreground/90">
+        <Separator />
+
+        <div className="flex items-center justify-end">
+          <Button onClick={save} disabled={loading || name.trim().length < 2}>
             {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : "Save changes"}
           </Button>
         </div>
       </div>
     </section>
-  )
-}
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
-      {hint && <p className="text-xs text-muted-foreground mb-2">{hint}</p>}
-      {children}
-    </div>
   )
 }

@@ -4,7 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Loader2, AlertTriangle, ArrowRight, Sparkles, ShieldCheck, Rocket } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
+import { Loader2, AlertTriangle, ArrowRight, Sparkles, Rocket } from "lucide-react"
 
 interface ClientOpt { id: string; name: string; email: string; company: string | null }
 
@@ -21,6 +27,10 @@ interface ScoreResp {
   tier: string
   claimId: string
 }
+
+const CLAIM_TYPES = [
+  "general", "ranking", "traffic", "revenue", "audience", "conversion", "output", "customer",
+]
 
 export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
   const router = useRouter()
@@ -61,85 +71,85 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 mb-6">
+    <section className="rounded-xl border bg-card p-5 mb-6">
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <div>
           <h2 className="font-semibold flex items-center gap-2">
             <Sparkles className="w-4 h-4" /> Quick claim
           </h2>
-          <p className="text-xs text-muted-foreground">Submit a claim on a client&apos;s behalf — we score it instantly.</p>
+          <p className="text-xs text-muted-foreground">
+            Submit a claim on a client&apos;s behalf — we score it instantly.
+          </p>
         </div>
-        <div className="text-[11px] uppercase tracking-wider">
-          {unlimited ? (
-            <span className="text-emerald-500 font-semibold flex items-center gap-1">
-              <Rocket className="w-3 h-3" /> Unlimited
-            </span>
-          ) : (
-            <span className={`${locked ? "text-rose-500" : "text-muted-foreground"}`}>
-              {used}/{dailyLimit} today
-            </span>
-          )}
-        </div>
+        {unlimited ? (
+          <Badge variant="success" className="gap-1">
+            <Rocket className="w-3 h-3" /> Unlimited
+          </Badge>
+        ) : (
+          <Badge variant={locked ? "destructive" : "outline"}>
+            {used}/{dailyLimit} today
+          </Badge>
+        )}
       </div>
 
       {locked && (
-        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-700">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <div className="flex-1">
+        <Alert variant="warning" className="mb-4">
+          <AlertTriangle />
+          <AlertDescription>
             <strong>Daily free-tier limit hit.</strong>{" "}
             <Link href="/pricing" className="underline font-semibold">Upgrade to Pro</Link>{" "}
             or{" "}
-            <Link href="/api/stripe/checkout?plan=membership" className="underline font-semibold">activate the $8/mo membership</Link>{" "}
+            <Link href="/api/stripe/checkout?plan=membership" className="underline font-semibold">
+              activate the $8/mo membership
+            </Link>{" "}
             for unlimited claims. Resets at midnight UTC.
-          </div>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr] gap-3 mb-3">
-        <select
+        <Select
           value={clientId}
-          onChange={(e) => setClientId(e.target.value)}
+          onValueChange={setClientId}
           disabled={loading || locked || clients.length === 0}
-          className="w-full px-3 py-2.5 rounded-lg border border-border bg-background focus:border-foreground/30 outline-none text-sm"
         >
-          <option value="">{clients.length ? "— select client —" : "invite a client first"}</option>
-          {clients.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} — {c.company || c.email}
-            </option>
-          ))}
-        </select>
-        <select
-          value={claimType}
-          onChange={(e) => setClaimType(e.target.value)}
-          disabled={loading || locked}
-          className="w-full px-3 py-2.5 rounded-lg border border-border bg-background focus:border-foreground/30 outline-none text-sm"
-        >
-          <option value="general">general</option>
-          <option value="ranking">ranking</option>
-          <option value="traffic">traffic</option>
-          <option value="revenue">revenue</option>
-          <option value="audience">audience</option>
-          <option value="conversion">conversion</option>
-          <option value="output">output</option>
-          <option value="customer">customer</option>
-        </select>
+          <SelectTrigger>
+            <SelectValue placeholder={clients.length ? "Select a client" : "Invite a client first"} />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name} — {c.company || c.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={claimType} onValueChange={setClaimType} disabled={loading || locked}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CLAIM_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <textarea
+      <Textarea
         value={claimText}
         onChange={(e) => setClaimText(e.target.value)}
         placeholder='e.g. "We closed $220K ARR in Q1 from cold email alone."'
         disabled={loading || locked}
         rows={3}
-        className="w-full px-3 py-2.5 rounded-lg border border-border bg-background focus:border-foreground/30 outline-none text-sm resize-y"
       />
 
       {err && (
-        <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-sm text-rose-500">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>{err}</span>
-        </div>
+        <Alert variant="destructive" className="mt-3">
+          <AlertTriangle />
+          <AlertDescription>{err}</AlertDescription>
+        </Alert>
       )}
 
       <div className="mt-4 flex items-center justify-between gap-3">
@@ -147,14 +157,13 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
         <Button
           onClick={submit}
           disabled={loading || locked || !clientId || claimText.trim().length < 10}
-          className="gap-2 bg-foreground text-background hover:bg-foreground/90"
         >
           {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Scoring…</> : <>Score + save <ArrowRight className="w-4 h-4" /></>}
         </Button>
       </div>
 
       {result && (
-        <div className="mt-4 rounded-lg border border-border bg-background p-4 animate-fade-in-up">
+        <div className="mt-4 rounded-lg border bg-background p-4 animate-fade-in-up">
           <div className="flex items-center gap-3 mb-2">
             <div className={`text-3xl font-bold tabular-nums ${
               result.score >= 75 ? "text-emerald-500" :
@@ -172,11 +181,14 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
           {result.reasoning.length > 0 && (
             <ul className="space-y-1 text-xs text-muted-foreground">
               {result.reasoning.map((r, i) => (
-                <li key={i} className="flex gap-2"><span className="font-mono text-foreground/60">0{i + 1}</span><span>{r}</span></li>
+                <li key={i} className="flex gap-2">
+                  <span className="font-mono text-foreground/60">0{i + 1}</span>
+                  <span>{r}</span>
+                </li>
               ))}
             </ul>
           )}
-          <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="mt-3 pt-3 border-t flex items-center justify-between text-[11px] text-muted-foreground">
             <span>Next step: upload evidence + verify live data on the claim page</span>
             <Link href={`/dashboard/claims/${result.claimId}`} className="underline">Open claim →</Link>
           </div>

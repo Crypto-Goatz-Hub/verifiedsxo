@@ -5,6 +5,7 @@ import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
 import { checkAgencyDailyClaimLimit } from "@/lib/agency-claim-limit"
 import { AppShell } from "@/components/app-shell"
 import { agencyNav } from "@/lib/nav"
+import { Badge } from "@/components/ui/badge"
 import { InvitePanel } from "./invite-panel"
 import { QuickClaim } from "./quick-claim"
 import { ShieldCheck, Users, Sparkles, PlusCircle } from "lucide-react"
@@ -211,12 +212,12 @@ function StatCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ cl
 }
 
 function StatusChip({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    invited:  { label: "Invited",  cls: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" },
-    active:   { label: "Active",   cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
-    churned:  { label: "Churned",  cls: "bg-gray-500/10 text-gray-500 border-gray-500/30" },
-    suspended:{ label: "Paused",   cls: "bg-rose-500/10 text-rose-600 border-rose-500/30" },
+  const map: Record<string, { label: string; variant: "warning" | "success" | "secondary" | "destructive" }> = {
+    invited:   { label: "Invited",  variant: "warning" },
+    active:    { label: "Active",   variant: "success" },
+    churned:   { label: "Churned",  variant: "secondary" },
+    suspended: { label: "Paused",   variant: "destructive" },
   }
   const s = map[status] || map.invited
-  return <span className={`text-xs px-2.5 py-1 rounded-full border ${s.cls}`}>{s.label}</span>
+  return <Badge variant={s.variant}>{s.label}</Badge>
 }
