@@ -6,13 +6,17 @@ import { checkAgencyDailyClaimLimit } from "@/lib/agency-claim-limit"
 import { AppShell } from "@/components/app-shell"
 import { agencyNav } from "@/lib/nav"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InvitePanel } from "./invite-panel"
 import { QuickClaim } from "./quick-claim"
-import { ShieldCheck, Users, Sparkles, PlusCircle } from "lucide-react"
+import { ShieldCheck, Users, Sparkles, PlusCircle, PartyPopper, Rocket } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
-export default async function DashboardPage() {
+interface Props { searchParams: Promise<{ membership?: string; upgraded?: string; canceled?: string }> }
+
+export default async function DashboardPage({ searchParams }: Props) {
+  const sp = await searchParams
   const supabase = await getSupabaseServer()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login?next=/dashboard")
@@ -91,6 +95,36 @@ export default async function DashboardPage() {
       <p className="text-sm text-muted-foreground -mt-4 mb-6">
         Plan: <span className="font-mono">{agency.plan}</span> · Signed in as {user.email}
       </p>
+
+      {sp.membership === "active" && agency.membership_status === "active" && (
+        <Alert variant="success" className="mb-6">
+          <PartyPopper />
+          <AlertDescription>
+            <strong>Membership active.</strong> Public profile is live at{" "}
+            <Link href={`/u/${agency.slug}`} className="font-mono underline underline-offset-2">
+              verifiedsxo.com/u/{agency.slug}
+            </Link>
+            . LinkedIn badges + unlimited claims unlocked.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {sp.upgraded && agency.plan !== "free" && (
+        <Alert variant="success" className="mb-6">
+          <Rocket />
+          <AlertDescription>
+            <strong>Plan upgraded to {agency.plan}.</strong> Daily claim limits removed, deep research enabled.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {sp.canceled && (
+        <Alert variant="warning" className="mb-6">
+          <AlertDescription>
+            Checkout canceled. No changes were made. <Link href="/pricing" className="underline">Review plans</Link>.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Public profile card */}
       <div className="mb-6">
