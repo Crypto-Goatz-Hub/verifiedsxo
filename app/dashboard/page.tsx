@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InvitePanel } from "./invite-panel"
 import { QuickClaim } from "./quick-claim"
+import { RewardsPanel } from "./rewards-panel"
 import { ShieldCheck, Users, Sparkles, PlusCircle, PartyPopper, Rocket } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -26,7 +27,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   // Owned agency first
   const { data: ownedAgency } = await admin
     .from("vsxo_agencies")
-    .select("id, name, slug, plan, created_at, membership_status, public_profile_enabled")
+    .select("id, name, slug, plan, created_at, membership_status, public_profile_enabled, referral_code")
     .eq("owner_user_id", user.id)
     .order("created_at", { ascending: true })
     .limit(1)
@@ -36,7 +37,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   if (!agency) {
     const { data: memberAgency } = await admin
       .from("vsxo_agency_members")
-      .select("vsxo_agencies(id, name, slug, plan, created_at, membership_status, public_profile_enabled)")
+      .select("vsxo_agencies(id, name, slug, plan, created_at, membership_status, public_profile_enabled, referral_code)")
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle()
@@ -76,6 +77,23 @@ export default async function DashboardPage({ searchParams }: Props) {
   const clientCount = clients?.length || 0
   const activeCount = clients?.filter((c) => c.status === "active").length || 0
   const limit = await checkAgencyDailyClaimLimit(agency.id)
+
+  // --- Rewards + referral stats -----------------------------------------
+  const referralCode: string = (agency.referral_code as string) || agency.slug
+
+  const [clicksRes, signupsRes, conversionsRes, rewardsRes] = await Promise.all([
+    admin.from("vsxo_referral_clicks").select("id", { count: "exact", head: true }).eq("referral_code", referralCode),
+    admin.from("vsxo_agencies").select("id", { count: "exact", head: true }).eq("referred_by_agency_id", agency.id),
+    admin.from("vsxo_agencies").select("id", { count: "exact", head: true })
+      .eq("referred_by_agency_id", agency.id).eq("membership_status", "active"),
+    admin.from("vsxo_rewards")
+      .select("id, kind, value, note, earned_at, consumed_at")
+      .eq("agency_id", agency.id)
+      .order("earned_at", { ascending: false })
+      .limit(10),
+  ])
+  const freeMonthsEarned = (rewardsRes.data || []).filter((r) => r.kind === "free_month_membership" && !r.consumed_at).length
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://verifiedsxo.com"
 
   return (
     <AppShell
@@ -170,6 +188,19 @@ export default async function DashboardPage({ searchParams }: Props) {
         <StatCard icon={Sparkles} label="Claims scored" value={totalClaims || 0} />
         <StatCard icon={ShieldCheck} label="Claims verified" value={verifiedCount || 0} />
       </div>
+
+      {/* Growth rewards + referral link */}
+      <RewardsPanel
+        referralCode={referralCode}
+        siteUrl={SITE_URL}
+        stats={{
+          clicks: clicksRes.count || 0,
+          signups: signupsRes.count || 0,
+          conversions: conversionsRes.count || 0,
+          freeMonthsEarned,
+        }}
+        recent={rewardsRes.data || []}
+      />
 
       {/* Agency-side quick claim */}
       <QuickClaim

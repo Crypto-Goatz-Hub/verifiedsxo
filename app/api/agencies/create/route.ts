@@ -33,6 +33,18 @@ export async function POST(req: NextRequest) {
     slug = `${base}-${Math.random().toString(36).slice(2, 6)}`
   }
 
+  // Resolve referral attribution from cookie
+  const refCookie = req.cookies.get("vsxo_ref")?.value?.toLowerCase()
+  let referredBy: string | null = null
+  if (refCookie && /^[a-z0-9][a-z0-9-]{1,40}$/.test(refCookie)) {
+    const { data: ref } = await admin
+      .from("vsxo_agencies")
+      .select("id")
+      .eq("referral_code", refCookie)
+      .maybeSingle()
+    referredBy = ref?.id || null
+  }
+
   // Upsert CRM contact in parallel with agency row
   const userName = user.user_metadata?.full_name || user.email || "there"
   const [crmResult, { data: agency, error }] = await Promise.all([
@@ -49,6 +61,9 @@ export async function POST(req: NextRequest) {
         owner_user_id: user.id,
         name,
         slug,
+        referral_code: slug,
+        referred_by_agency_id: referredBy,
+        referred_at: referredBy ? new Date().toISOString() : null,
       })
       .select("id, slug")
       .single(),

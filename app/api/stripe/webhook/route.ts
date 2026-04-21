@@ -45,6 +45,45 @@ async function applyMembership(
       updated_at: new Date().toISOString(),
     })
     .eq("id", agencyId)
+
+  // Referral reward: if this agency was referred, credit the referrer once per subscription
+  if (status === "active") {
+    const { data: row } = await admin
+      .from("vsxo_agencies")
+      .select("id, name, referred_by_agency_id")
+      .eq("id", agencyId)
+      .maybeSingle()
+    const referrerId = row?.referred_by_agency_id || null
+    if (referrerId && sub?.id) {
+      const { data: dup } = await admin
+        .from("vsxo_rewards")
+        .select("id")
+        .eq("agency_id", referrerId)
+        .eq("source_agency_id", agencyId)
+        .eq("kind", "free_month_membership")
+        .maybeSingle()
+      if (!dup) {
+        await admin.from("vsxo_rewards").insert({
+          agency_id: referrerId,
+          source_agency_id: agencyId,
+          kind: "free_month_membership",
+          value: 1,
+          note: `Referred ${row?.name || "agency"} converted to paid membership`,
+        })
+        pingMike({
+          event: "agency.signup",
+          headline: `Referral reward earned: +1 free month`,
+          fields: {
+            "Referrer agency": referrerId,
+            "Converted agency": agencyId,
+            "Stripe sub": sub.id,
+          },
+          link: `https://verifiedsxo.com/dashboard`,
+        })
+      }
+    }
+  }
+
   pingMike({
     event: "agency.signup",
     headline: `Membership → ${status} (${source || "?"})`,

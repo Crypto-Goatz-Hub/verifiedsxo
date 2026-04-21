@@ -71,6 +71,31 @@ export default async function WallPage({ searchParams }: Props) {
   const { count: verifiedClaims } = await admin.from("vsxo_claims").select("id", { count: "exact", head: true }).eq("status", "verified")
   const { count: elevatedClaims } = await admin.from("vsxo_claims").select("id", { count: "exact", head: true }).eq("status", "elevated")
 
+  // Leaderboard: top agencies by verified claim count
+  const { data: leaderClaims } = await admin
+    .from("vsxo_claims")
+    .select("agency_id, agency:vsxo_agencies(id, name, slug, domain_verified, public_profile_enabled, membership_status)")
+    .in("status", ["verified", "elevated"])
+    .limit(500)
+  type LeaderAgency = { id: string; name: string; slug: string; domain_verified: boolean; public_profile_enabled: boolean; membership_status: string } | null
+  const tally = new Map<string, { name: string; slug: string; count: number; verified: boolean; public: boolean }>()
+  for (const row of leaderClaims || []) {
+    const a = (row as unknown as { agency: LeaderAgency }).agency
+    if (!a) continue
+    const cur = tally.get(a.id) || {
+      name: a.name,
+      slug: a.slug,
+      count: 0,
+      verified: !!a.domain_verified,
+      public: a.membership_status === "active" && !!a.public_profile_enabled,
+    }
+    cur.count++
+    tally.set(a.id, cur)
+  }
+  const leaderboard = Array.from(tally.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+
   return (
     <>
       <Header />
@@ -97,6 +122,35 @@ export default async function WallPage({ searchParams }: Props) {
             <StatMini icon={<TrendingUp className="w-3.5 h-3.5 text-violet-500" />} label="Elevated" value={elevatedClaims || 0} />
           </div>
         </section>
+
+        {/* Leaderboard strip */}
+        {leaderboard.length > 0 && (
+          <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <div className="rounded-xl border bg-gradient-to-br from-violet-500/5 via-card to-cyan-500/5 p-5">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-violet-500" />
+                  <h2 className="font-semibold">Top verified agencies</h2>
+                </div>
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">By verified claim count</span>
+              </div>
+              <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+                {leaderboard.map(([id, a], i) => (
+                  <li key={id} className="flex items-center gap-2 p-2.5 rounded-lg border bg-background">
+                    <span className="text-xs font-mono text-muted-foreground w-5 text-center">{String(i + 1).padStart(2, "0")}</span>
+                    {a.public ? (
+                      <Link href={`/u/${a.slug}`} className="text-sm font-medium truncate hover:underline">{a.name}</Link>
+                    ) : (
+                      <span className="text-sm font-medium truncate">{a.name}</span>
+                    )}
+                    {a.verified && <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" />}
+                    <span className="ml-auto text-xs font-bold tabular-nums text-foreground/80">{a.count}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+        )}
 
         {/* Filter bar */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">

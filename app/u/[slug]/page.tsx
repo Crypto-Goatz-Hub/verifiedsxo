@@ -7,6 +7,7 @@ import { AnimatedGridBackground } from "@/components/animated-grid-background"
 import { DetectorShapes } from "@/components/detector-shapes"
 import { CopyEmbed } from "@/components/copy-embed"
 import { Button } from "@/components/ui/button"
+import { ShareButtons } from "@/components/share-buttons"
 import { ShieldCheck, Linkedin, ArrowRight } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -117,6 +118,14 @@ export default async function PublicProfilePage({ params }: Props) {
               <p className="text-sm leading-relaxed">{agency.description}</p>
             </section>
           )}
+
+          <div className="rounded-xl border bg-card p-4 mb-6">
+            <ShareButtons
+              url={`${SITE}/u/${agency.slug}?r=${encodeURIComponent(agency.slug)}`}
+              text={`${agency.name} — ${agency.tagline || "Verified agency on VerifiedSXO."}`}
+              compact
+            />
+          </div>
 
           <section className="rounded-xl border border-border bg-card p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
