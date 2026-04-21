@@ -25,10 +25,17 @@ export async function POST(
   const admin = getSupabaseAdmin()
   const { data: claim } = await admin
     .from("vsxo_claims")
-    .select("id, client_id, agency_id, vsxo_agency_clients(user_id), status")
+    .select("id, client_id, agency_id, self_claim, vsxo_agency_clients(user_id), status")
     .eq("id", claimId)
     .maybeSingle()
   if (!claim) return NextResponse.json({ error: "not_found" }, { status: 404 })
+
+  if (claim.self_claim) {
+    return NextResponse.json({
+      error: "self_claim_not_elevatable",
+      message: "Self-claims can't be elevated. They remain Unverified until a client attests with live data.",
+    }, { status: 409 })
+  }
 
   // @ts-expect-error join
   const clientUserId: string | null = claim.vsxo_agency_clients?.user_id

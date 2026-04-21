@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { Loader2, AlertTriangle, ArrowRight, Sparkles, Rocket } from "lucide-react"
+import { Loader2, AlertTriangle, ArrowRight, Sparkles, Rocket, ShieldAlert } from "lucide-react"
 
 interface ClientOpt { id: string; name: string; email: string; company: string | null }
 
@@ -26,7 +26,11 @@ interface ScoreResp {
   reasoning: string[]
   tier: string
   claimId: string
+  selfClaim?: boolean
+  badgeSlug?: string | null
 }
+
+const SELF = "__self__"
 
 const CLAIM_TYPES = [
   "general", "ranking", "traffic", "revenue", "audience", "conversion", "output", "customer",
@@ -46,14 +50,21 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
 
   async function submit() {
     setErr(null); setResult(null)
-    if (!clientId) return setErr("Pick a client first")
+    if (!clientId) return setErr("Choose a client or pick 'Self-claim' first")
     if (claimText.trim().length < 10) return setErr("Claim needs a full sentence")
     setLoading(true)
+    const selfClaim = clientId === SELF
+    const payload: Record<string, string | boolean> = {
+      claimText: claimText.trim(),
+      claimType,
+    }
+    if (selfClaim) payload.selfClaim = true
+    else payload.clientId = clientId
     try {
       const r = await fetch("/api/agency/claims", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, claimText: claimText.trim(), claimType }),
+        body: JSON.stringify(payload),
       })
       const j = await r.json()
       if (!r.ok) {
@@ -111,12 +122,13 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
         <Select
           value={clientId}
           onValueChange={setClientId}
-          disabled={loading || locked || clients.length === 0}
+          disabled={loading || locked}
         >
           <SelectTrigger>
-            <SelectValue placeholder={clients.length ? "Select a client" : "Invite a client first"} />
+            <SelectValue placeholder="Who is this claim about?" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value={SELF}>Self-claim · no client (Unverified badge)</SelectItem>
             {clients.map((c) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.name} — {c.company || c.email}
@@ -162,6 +174,16 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
         </Button>
       </div>
 
+      {clientId === SELF && (
+        <Alert variant="warning" className="mt-3">
+          <ShieldAlert />
+          <AlertDescription>
+            <strong>Self-claim mode.</strong> We&rsquo;ll score it and give you an <em>Unverified</em> embeddable badge, but it
+            can&rsquo;t earn the green Verified stamp until a client attests with live data.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {result && (
         <div className="mt-4 rounded-lg border bg-background p-4 animate-fade-in-up">
           <div className="flex items-center gap-3 mb-2">
@@ -189,8 +211,19 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
             </ul>
           )}
           <div className="mt-3 pt-3 border-t flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>Next step: upload evidence + verify live data on the claim page</span>
-            <Link href={`/dashboard/claims/${result.claimId}`} className="underline">Open claim →</Link>
+            {result.selfClaim ? (
+              <>
+                <span>Self-claim · Unverified badge ready</span>
+                {result.badgeSlug && (
+                  <Link href={`/v/${result.badgeSlug}`} className="underline" target="_blank">Copy badge →</Link>
+                )}
+              </>
+            ) : (
+              <>
+                <span>Next step: upload evidence + verify live data on the claim page</span>
+                <Link href={`/dashboard/claims/${result.claimId}`} className="underline">Open claim →</Link>
+              </>
+            )}
           </div>
         </div>
       )}

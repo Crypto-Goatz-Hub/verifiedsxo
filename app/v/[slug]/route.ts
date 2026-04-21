@@ -48,16 +48,19 @@ export async function GET(
 
   const site = process.env.NEXT_PUBLIC_SITE_URL || "https://verifiedsxo.com"
   let badgeSlug = slug
-  let claim: { claim_text: string; claim_type: string; status: string } | null = null
-  let verification: { evidence: unknown; passed: boolean; confidence: number; verified_at: string } | null = null
+  type ClaimBundle = { claim_text: string; claim_type: string; status: string; plausibility_score: number | null; self_claim: boolean; created_at?: string }
+  type VerificationBundle = { evidence: unknown; passed: boolean; confidence: number; verified_at: string }
+  let claim: ClaimBundle | null = null
+  let verification: VerificationBundle | null = null
+  let isSelfClaim = false
 
   if (slug === "example") {
-    // Synthetic demo payload so /badge-examples always renders a live badge
-    // even on fresh installs where no public badge exists yet.
     claim = {
       claim_text: "We ranked #1 on Google for our primary keyword within 90 days.",
       claim_type: "ranking",
       status: "verified",
+      plausibility_score: 95,
+      self_claim: false,
     }
     verification = {
       evidence: { summary: "Google Search Console: position 1 for primary keyword, 90-day sample." },
@@ -69,19 +72,38 @@ export async function GET(
     const admin = getSupabaseAdmin()
     const { data: badge } = await admin
       .from("vsxo_badges")
-      .select("id, slug, claim_id, verification_id, last_verified_at, embed_count, public_visible")
+      .select("id, slug, claim_id, verification_id, last_verified_at, embed_count, public_visible, self_claim")
       .eq("slug", slug)
       .eq("public_visible", true)
       .maybeSingle()
     if (!badge) return notFoundJs(slug)
+    isSelfClaim = Boolean(badge.self_claim)
 
-    const [claimRes, verRes] = await Promise.all([
-      admin.from("vsxo_claims").select("claim_text, claim_type, status").eq("id", badge.claim_id).single(),
-      admin.from("vsxo_verifications").select("evidence, passed, confidence, verified_at").eq("id", badge.verification_id).single(),
-    ])
-    claim = claimRes.data as typeof claim
-    verification = verRes.data as typeof verification
-    if (!claim || !verification) return notFoundJs(slug)
+    const claimRes = await admin
+      .from("vsxo_claims")
+      .select("claim_text, claim_type, status, plausibility_score, self_claim, created_at")
+      .eq("id", badge.claim_id)
+      .single()
+    claim = claimRes.data as unknown as ClaimBundle
+    if (!claim) return notFoundJs(slug)
+    isSelfClaim = isSelfClaim || Boolean(claim.self_claim)
+
+    if (isSelfClaim || !badge.verification_id) {
+      verification = {
+        evidence: { summary: claim.claim_text },
+        passed: false,
+        confidence: claim.plausibility_score ?? 0,
+        verified_at: claim.created_at || new Date().toISOString(),
+      }
+    } else {
+      const verRes = await admin
+        .from("vsxo_verifications")
+        .select("evidence, passed, confidence, verified_at")
+        .eq("id", badge.verification_id)
+        .single()
+      verification = verRes.data as unknown as VerificationBundle
+      if (!verification) return notFoundJs(slug)
+    }
 
     // Fire and forget: bump embed count
     admin.from("vsxo_badges").update({ embed_count: (badge.embed_count || 0) + 1 }).eq("id", badge.id).then(() => {})
@@ -101,6 +123,8 @@ export async function GET(
     page,
     verifiedLabel,
     elevated,
+    selfClaim: isSelfClaim,
+    score: claim.plausibility_score ?? null,
     claimText: claim.claim_text.slice(0, 160),
     snippet: claimSnippet,
     confidence: verification.confidence,
@@ -121,8 +145,8 @@ export async function GET(
   var theme = (ds.theme || '').toLowerCase();
   var metric = (ds.metric || '').slice(0, 40);
 
-  var ACCENT_FROM = DATA.elevated ? '#10b981' : '#8b5cf6';
-  var ACCENT_TO   = DATA.elevated ? '#06b6d4' : '#06b6d4';
+  var ACCENT_FROM = DATA.selfClaim ? '#f59e0b' : DATA.elevated ? '#10b981' : '#8b5cf6';
+  var ACCENT_TO   = DATA.selfClaim ? '#f97316' : '#06b6d4';
   var TEXT_DARK   = '#0a0a0a';
   var TEXT_LIGHT  = '#ffffff';
   var surface     = theme === 'dark' ? '#0a0a0a' : '#ffffff';
@@ -181,13 +205,15 @@ export async function GET(
     mark.innerHTML = shieldSvg(14);
     wrap.appendChild(mark);
 
+    var primaryText = DATA.selfClaim ? 'Unverified' : 'Verified';
     var label = document.createElement('span');
     label.innerHTML =
-      '<strong style="font-weight:700;background:linear-gradient(90deg,'+ACCENT_FROM+','+ACCENT_TO+');-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:0.005em;">Verified</strong>' +
+      '<strong style="font-weight:700;background:linear-gradient(90deg,'+ACCENT_FROM+','+ACCENT_TO+');-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:0.005em;">'+primaryText+'</strong>' +
       '<span style="opacity:0.6;margin:0 6px;">·</span>' +
       '<span>VerifiedSXO</span>' +
-      (metric ? '<span style="opacity:0.6;margin:0 6px;">·</span><strong style="font-weight:600;">'+escHtml(metric)+'</strong>' : '') +
-      '<span style="opacity:0.55;margin-left:6px;font-size:11px;">'+DATA.verifiedLabel+'</span>';
+      (DATA.selfClaim ? '<span style="opacity:0.55;margin-left:6px;font-size:11px;">Self-attested</span>' :
+        (metric ? '<span style="opacity:0.6;margin:0 6px;">·</span><strong style="font-weight:600;">'+escHtml(metric)+'</strong>' : '') +
+        '<span style="opacity:0.55;margin-left:6px;font-size:11px;">'+DATA.verifiedLabel+'</span>');
     wrap.appendChild(label);
     return wrap;
   }
@@ -215,15 +241,19 @@ export async function GET(
 
     var body = document.createElement('span');
     body.style.cssText = 'display:flex;flex-direction:column;justify-content:center;padding:10px 14px;flex:1;gap:2px;';
+    var topline = DATA.selfClaim
+      ? 'Self-attested · Unverified'
+      : DATA.elevated ? 'Elevated 100%' : 'Independently verified';
+    var bottomline = DATA.selfClaim
+      ? 'Plausibility ' + (DATA.score != null ? DATA.score + '% · ' : '') + 'click for methodology'
+      : 'Verified ' + DATA.verifiedLabel + ' · click for proof';
     body.innerHTML =
-      '<span style="font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:10px;opacity:0.7;">' +
-        (DATA.elevated ? 'Elevated 100%' : 'Independently verified') +
-      '</span>' +
+      '<span style="font-weight:700;letter-spacing:0.04em;text-transform:uppercase;font-size:10px;opacity:0.7;">' + topline + '</span>' +
       '<span style="font-weight:700;font-size:14px;">' +
         '<span style="background:linear-gradient(90deg,'+ACCENT_FROM+','+ACCENT_TO+');-webkit-background-clip:text;background-clip:text;color:transparent;">VerifiedSXO</span>' +
         (metric ? ' · <span>'+escHtml(metric)+'</span>' : '') +
       '</span>' +
-      '<span style="opacity:0.55;font-size:11px;">Verified '+DATA.verifiedLabel+' · click for proof</span>';
+      '<span style="opacity:0.55;font-size:11px;">'+bottomline+'</span>';
     wrap.appendChild(body);
     return wrap;
   }
@@ -257,7 +287,9 @@ export async function GET(
     var ringText =
       '<defs><path id="ringPath-'+DATA.slug+'" d="M 60 12 A 48 48 0 1 1 60 108 A 48 48 0 1 1 60 12"/></defs>' +
       '<text fill="'+onSurface+'" fill-opacity="0.8" font-size="8.5" font-family="-apple-system, BlinkMacSystemFont, \\'Segoe UI\\', Helvetica, Arial, sans-serif" font-weight="700" letter-spacing="3">' +
-      '<textPath href="#ringPath-'+DATA.slug+'" startOffset="0">VERIFIED · BY VERIFIEDSXO · AUTHENTIC · </textPath></text>';
+      '<textPath href="#ringPath-'+DATA.slug+'" startOffset="0">' +
+        (DATA.selfClaim ? 'UNVERIFIED · SELF ATTESTED · VERIFIEDSXO · ' : 'VERIFIED · BY VERIFIEDSXO · AUTHENTIC · ') +
+      '</textPath></text>';
 
     var pulse =
       '<circle cx="60" cy="60" r="40" fill="none" stroke="url(#vsxoG-'+DATA.slug+')" stroke-opacity="0.6" stroke-width="1" class="pulse"/>';
@@ -269,7 +301,8 @@ export async function GET(
       '</g>';
     var labels =
       '<text x="60" y="110" fill="'+onSurface+'" fill-opacity="0.6" font-size="7" font-family="-apple-system, BlinkMacSystemFont, \\'Segoe UI\\', Helvetica, Arial, sans-serif" font-weight="600" text-anchor="middle" letter-spacing="1.5">' +
-        (DATA.elevated ? 'ELEVATED · 100%' : DATA.verifiedLabel.toUpperCase()) +
+        (DATA.selfClaim ? ('PLAUSIBILITY · ' + (DATA.score != null ? DATA.score + '%' : 'SCORED'))
+          : DATA.elevated ? 'ELEVATED · 100%' : DATA.verifiedLabel.toUpperCase()) +
       '</text>';
 
     svg.innerHTML = defs + outer + pulse + core + ringText + labels;

@@ -8,6 +8,7 @@ import { buildTimeline, STATUS_META, type ClaimStatus } from "@/lib/claims"
 import { EvidenceUploader } from "@/components/evidence-uploader"
 import { ElevateButton } from "@/components/elevate-button"
 import { ResearchPanel } from "@/components/research-panel"
+import { CopyEmbed } from "@/components/copy-embed"
 import { ShieldCheck, ArrowLeft } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -84,13 +85,26 @@ export default async function AgencyClaimDetailPage({ params }: Props) {
           <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
             <div className="flex-1 min-w-0">
               <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
-                {client?.name} {client?.company ? `· ${client.company}` : ""} · {claim.claim_type}
+                {claim.self_claim
+                  ? `Self-claim · ${claim.claim_type}`
+                  : `${client?.name || ""} ${client?.company ? `· ${client.company}` : ""} · ${claim.claim_type}`}
               </div>
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-balance mb-3">
                 &ldquo;{claim.claim_text}&rdquo;
               </h1>
-              <ClaimStatusBadge status={status} size="md" />
-              <p className="text-xs text-muted-foreground mt-2">{STATUS_META[status]?.hint}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <ClaimStatusBadge status={status} size="md" />
+                {claim.self_claim && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-700 text-xs font-medium uppercase tracking-wider">
+                    Self-claim · Unverified
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {claim.self_claim
+                  ? "Self-attested. Earn the Verified stamp by inviting this claim's client to attest with live data."
+                  : STATUS_META[status]?.hint}
+              </p>
             </div>
             {badge && (
               <Link href={`/verified/${badge.slug}`}>
@@ -174,9 +188,24 @@ export default async function AgencyClaimDetailPage({ params }: Props) {
             canDeep={canDeep}
           />
 
-          <EvidenceUploader claimId={claim.id} editable={true} />
+          {claim.self_claim && badge && (
+            <section className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-6 mt-6">
+              <h2 className="text-sm font-semibold mb-2 uppercase tracking-wider text-yellow-700">Unverified badge snippet</h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                This self-claim has an &ldquo;Unverified&rdquo; embeddable badge. To upgrade to the green Verified stamp,
+                invite this claim&rsquo;s client to attest using live data.
+              </p>
+              <div className="space-y-3">
+                <CopyEmbed snippet={`<script src="https://verifiedsxo.com/v/${badge.slug}" async></script>`} label="Inline pill (default)" />
+                <CopyEmbed snippet={`<script src="https://verifiedsxo.com/v/${badge.slug}" data-variant="stamp" async></script>`} label="Circular stamp" />
+                <CopyEmbed snippet={`<script src="https://verifiedsxo.com/v/${badge.slug}" data-variant="banner" async></script>`} label="Banner" />
+              </div>
+            </section>
+          )}
 
-          {(status === "verified" || status === "pending_review" || status === "elevated") && (
+          {!claim.self_claim && <EvidenceUploader claimId={claim.id} editable={true} />}
+
+          {!claim.self_claim && (status === "verified" || status === "pending_review" || status === "elevated") && (
             <section className="rounded-xl border border-border bg-card p-6 mt-6">
               <h2 className="text-sm font-semibold mb-2 uppercase tracking-wider text-muted-foreground">
                 {status === "elevated" ? "Re-run AI elevation" : "Elevate to 100%"}

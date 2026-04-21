@@ -48,7 +48,7 @@ export default async function WallPage({ searchParams }: Props) {
     .from("vsxo_claims")
     .select(`
       id, claim_text, claim_type, plausibility_score, plausibility_tier, status,
-      created_at, verified_at, elevated_at, agency_id,
+      created_at, verified_at, elevated_at, agency_id, self_claim,
       agency:vsxo_agencies(id, name, slug, domain_verified, membership_status)
     `)
     .order("created_at", { ascending: false })
@@ -212,6 +212,11 @@ export default async function WallPage({ searchParams }: Props) {
                         {/* Meta row */}
                         <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground mb-2">
                           <ClaimStatusBadge status={c.status} size="xs" />
+                          {c.self_claim && (
+                            <Badge variant="warning" className="gap-1">
+                              <ShieldAlert /> Self-claim · Unverified
+                            </Badge>
+                          )}
                           <span className="font-mono uppercase tracking-wider">{c.claim_type}</span>
                           <span>·</span>
                           <time dateTime={c.created_at}>

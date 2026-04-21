@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const admin = getSupabaseAdmin()
   const { data: claim } = await admin
     .from("vsxo_claims")
-    .select("id, client_id, vsxo_agency_clients(user_id, agency_id)")
+    .select("id, client_id, self_claim, vsxo_agency_clients(user_id, agency_id)")
     .eq("id", claimId)
     .maybeSingle()
 
@@ -28,6 +28,13 @@ export async function POST(req: NextRequest) {
   const agencyId: string | null = claim?.vsxo_agency_clients?.agency_id
 
   if (!claim) return NextResponse.json({ error: "claim not found" }, { status: 404 })
+
+  if (claim.self_claim) {
+    return NextResponse.json({
+      error: "self_claim_not_verifiable",
+      message: "Self-claims stay Unverified. Invite the client to attest with live data to run verification.",
+    }, { status: 409 })
+  }
 
   // Permit if submitter is the claim's client OR an agency member
   const isClient = clientUserId === user.id
