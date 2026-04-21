@@ -16,9 +16,31 @@ interface Props { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
+  const admin = getSupabaseAdmin()
+  const { data: a } = await admin
+    .from("vsxo_agencies")
+    .select("name, tagline, description, domain_verified")
+    .eq("slug", slug)
+    .maybeSingle()
+  const name = a?.name || slug
+  const tagline = a?.tagline || "Independently verified marketing claims, live on a public agency profile."
+  const title = `${name} — ${a?.domain_verified ? "verified agency" : "agency profile"}`
   return {
-    title: `${slug} | VerifiedSXO`,
-    description: `${slug} on VerifiedSXO — independently verified marketing claims, evidence, and data sources.`,
+    title,
+    description: tagline,
+    alternates: { canonical: `https://verifiedsxo.com/u/${slug}` },
+    openGraph: {
+      title,
+      description: tagline,
+      url: `https://verifiedsxo.com/u/${slug}`,
+      siteName: "VerifiedSXO",
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title,
+      description: tagline,
+    },
   }
 }
 

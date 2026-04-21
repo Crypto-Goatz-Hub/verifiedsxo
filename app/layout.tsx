@@ -8,35 +8,51 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://verifiedsxo.com"),
-  title: "VerifiedSXO — The proof layer for marketing claims",
+  title: {
+    default: "VerifiedSXO — Every marketing claim, on the record.",
+    template: "%s | VerifiedSXO",
+  },
   description:
-    "Every marketing stat, weighed against 25 years of data. Prove it with your own analytics. Earn a verified badge that lives next to your claim.",
+    "The BS meter for marketing claims. Score any stat in 15 seconds, verify with live analytics, and earn a badge that spreads proof — not hype.",
   keywords: [
-    "verified stats",
+    "verified marketing stats",
     "marketing claim verification",
     "SXO",
-    "stat verification",
+    "search experience optimization",
     "proof of performance",
     "agency reputation",
+    "verify SEO claims",
+    "verify ARR claims",
+    "BS meter",
+    "trust badge",
   ],
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-video-preview": -1, "max-snippet": -1 },
   },
   openGraph: {
     type: "website",
     url: "https://verifiedsxo.com",
     siteName: "VerifiedSXO",
-    title: "VerifiedSXO — The proof layer for marketing claims",
-    description: "Weigh any claim against 25 years of data. Prove it with your own analytics. Badge the truth.",
+    locale: "en_US",
+    title: "VerifiedSXO — Every marketing claim, on the record.",
+    description:
+      "Score any marketing stat in 15 seconds. Verify with live analytics. Badge the truth — or flag the BS.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "VerifiedSXO",
-    description: "Verify every marketing claim.",
+    site: "@verifiedsxo",
+    creator: "@verifiedsxo",
+    title: "VerifiedSXO — Every marketing claim, on the record.",
+    description:
+      "Score any marketing stat in 15 seconds. Verify with live analytics. Badge the truth.",
   },
   alternates: { canonical: "https://verifiedsxo.com" },
+  applicationName: "VerifiedSXO",
+  category: "technology",
+  creator: "VerifiedSXO",
+  publisher: "VerifiedSXO",
 }
 
 export const viewport: Viewport = {

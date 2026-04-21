@@ -8,9 +8,22 @@ import Link from "next/link"
 import { ArrowRight, Brain, LinkIcon, ShieldCheck, Award, Lock, Database, Clock } from "lucide-react"
 
 export const metadata = {
-  title: "How it works | VerifiedSXO",
-  description: "From a pasted claim to an embeddable proof badge in 4 steps. No screenshots, no self-reporting — only real data from your own accounts.",
+  title: "How it works — score, verify, badge, in 15 seconds",
+  description:
+    "A three-tier AI pipeline scores any claim against 25 years of marketing data, then checks it against live analytics. No screenshots. No self-reporting.",
   alternates: { canonical: "https://verifiedsxo.com/how-it-works" },
+  openGraph: {
+    title: "Score. Verify. Badge. In 15 seconds.",
+    description: "Three-tier AI pipeline + live analytics + an unforgeable embeddable badge.",
+    url: "https://verifiedsxo.com/how-it-works",
+    siteName: "VerifiedSXO",
+    type: "article",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "How VerifiedSXO works",
+    description: "From pasted claim to public trust badge in 15 seconds.",
+  },
 }
 
 const STEPS = [

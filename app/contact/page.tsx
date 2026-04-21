@@ -5,9 +5,21 @@ import { DetectorShapes } from "@/components/detector-shapes"
 import { ContactForm } from "./contact-form"
 
 export const metadata = {
-  title: "Contact | VerifiedSXO",
-  description: "Questions, partnerships, or enterprise needs — drop us a line and Mike will reply personally.",
+  title: "Contact — talk to the team behind the badge",
+  description: "Questions, partnerships, enterprise needs — drop us a line. We read every message and reply within one business day.",
   alternates: { canonical: "https://verifiedsxo.com/contact" },
+  openGraph: {
+    title: "Talk to the team behind the badge.",
+    description: "Direct line to VerifiedSXO. Partnerships, integrations, or just a hello.",
+    url: "https://verifiedsxo.com/contact",
+    siteName: "VerifiedSXO",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "Contact VerifiedSXO",
+    description: "Direct line — we reply within one business day.",
+  },
 }
 
 export default function Page() {

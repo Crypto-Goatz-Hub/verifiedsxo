@@ -22,10 +22,24 @@ import { ShieldCheck, Flame, TrendingUp, Sparkles, Filter, ShieldAlert } from "l
 export const dynamic = "force-dynamic"
 
 export const metadata = {
-  title: "Claims wall — every marketing claim, public on submit | VerifiedSXO",
+  title: "The Claims Wall — every marketing claim, public on submit",
   description:
-    "The live public feed of every marketing claim submitted through VerifiedSXO. See the score, the status, who submitted it, and copy any claim in one click. Verified agencies carry a domain-matched trust stamp.",
+    "Live public feed of every marketing claim on VerifiedSXO. Score, status, agency on the record. Copy any claim in one click. Verified agencies carry a domain-matched trust stamp.",
   alternates: { canonical: "https://verifiedsxo.com/wall" },
+  openGraph: {
+    title: "The Claims Wall — every marketing claim, public on submit",
+    description:
+      "Live public feed. Score, status, agency on the record. Filter to verified agencies only. Copy any claim with one click.",
+    url: "https://verifiedsxo.com/wall",
+    siteName: "VerifiedSXO",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "The Claims Wall — marketing claims, on the record.",
+    description:
+      "Every submitted claim, live. Score, agency, status. Copy any claim with one click.",
+  },
 }
 
 interface Props {

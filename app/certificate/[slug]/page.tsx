@@ -13,9 +13,25 @@ interface Props { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
+  const title = `Official certificate · ${slug}`
+  const description =
+    "A sealed, public record of an independently verified marketing claim. Open the page for full methodology and evidence chain."
   return {
-    title: `Certificate ${slug} | VerifiedSXO`,
-    description: "Official VerifiedSXO certificate of independently verified marketing claim.",
+    title,
+    description,
+    alternates: { canonical: `https://verifiedsxo.com/certificate/${slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `https://verifiedsxo.com/certificate/${slug}`,
+      siteName: "VerifiedSXO",
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title,
+      description,
+    },
   }
 }
 

@@ -14,9 +14,45 @@ interface Props { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
+  const admin = getSupabaseAdmin()
+  const { data: badge } = await admin
+    .from("vsxo_badges")
+    .select("claim_id, self_claim")
+    .eq("slug", slug)
+    .maybeSingle()
+  let title = `Verified claim · ${slug}`
+  let description = "Independently verified marketing claim — evidence, methodology, and data source."
+  if (badge?.claim_id) {
+    const { data: claim } = await admin
+      .from("vsxo_claims")
+      .select("claim_text, status, self_claim")
+      .eq("id", badge.claim_id)
+      .maybeSingle()
+    if (claim?.claim_text) {
+      const snippet = claim.claim_text.length > 120 ? claim.claim_text.slice(0, 117) + "…" : claim.claim_text
+      const isSelf = !!badge.self_claim || !!claim.self_claim
+      title = isSelf ? `Unverified · self-attested — "${snippet}"` : `Verified — "${snippet}"`
+      description = isSelf
+        ? "Self-attested claim on VerifiedSXO. Plausibility-scored by AI against 25 years of marketing data."
+        : "Independently verified with live analytics — evidence, methodology, and data source all public."
+    }
+  }
   return {
-    title: `Verified claim · ${slug} | VerifiedSXO`,
-    description: "Independently verified marketing claim — evidence, methodology, and data source.",
+    title,
+    description,
+    alternates: { canonical: `https://verifiedsxo.com/verified/${slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `https://verifiedsxo.com/verified/${slug}`,
+      siteName: "VerifiedSXO",
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title,
+      description,
+    },
   }
 }
 

@@ -8,9 +8,23 @@ import Link from "next/link"
 import { ArrowRight, ShieldCheck, Users, Gift, TrendingUp, Mail, Rocket } from "lucide-react"
 
 export const metadata = {
-  title: "For agencies | VerifiedSXO",
-  description: "Every client you onboard becomes a verified case study. Automated reputation compounding for agencies — incentive bank, invite tracking, review flows baked in.",
+  title: "For agencies — turn every win into a verified case study",
+  description:
+    "Invite a client. Verify their stat with live analytics. Earn a badge tied to a public agency profile — shareable, embeddable, unforgeable.",
   alternates: { canonical: "https://verifiedsxo.com/for-agencies" },
+  openGraph: {
+    title: "Your case studies, on the record.",
+    description:
+      "Automated reputation compounding: invite tracking, verified badges, LinkedIn-ready proof — all tied to a public agency profile.",
+    url: "https://verifiedsxo.com/for-agencies",
+    siteName: "VerifiedSXO",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "VerifiedSXO for agencies",
+    description: "Every client win → a public, verifiable proof. Automated.",
+  },
 }
 
 export default function Page() {

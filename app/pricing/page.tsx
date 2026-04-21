@@ -10,10 +10,22 @@ import { PLANS, MEMBERSHIP } from "@/lib/stripe"
 import React from "react"
 
 export const metadata = {
-  title: "Pricing | VerifiedSXO",
+  title: "Pricing — start free, badge for $8/mo",
   description:
     "Free to try. Per-feature pricing with no per-seat tax. Agency plans from $0 to custom enterprise, plus the $8/mo public profile add-on.",
   alternates: { canonical: "https://verifiedsxo.com/pricing" },
+  openGraph: {
+    title: "Pricing — start free, badge for $8/mo.",
+    description: "No per-seat tax. Public profile + LinkedIn-ready verified stamp for $8/mo. Cancel anytime.",
+    url: "https://verifiedsxo.com/pricing",
+    siteName: "VerifiedSXO",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "VerifiedSXO pricing — free to start, $8/mo to badge.",
+    description: "Public profile, LinkedIn-ready verified stamp, unlimited claims. Cancel anytime.",
+  },
 }
 
 type Cell = string | boolean

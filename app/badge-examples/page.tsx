@@ -13,10 +13,22 @@ import { getSupabaseAdmin } from "@/lib/supabase/server"
 export const dynamic = "force-dynamic"
 
 export const metadata = {
-  title: "Badge examples | VerifiedSXO",
+  title: "Badge examples — one script, three variants, zero dependencies",
   description:
-    "See every variant of the VerifiedSXO verification badge — inline pill, circular stamp, full banner — each embeddable with one line.",
+    "Inline pill, circular stamp, or full banner — each embeddable with one script tag. Shadow-DOM scoped, tamper-evident, click-through to methodology.",
   alternates: { canonical: "https://verifiedsxo.com/badge-examples" },
+  openGraph: {
+    title: "One script. Three variants. Zero dependencies.",
+    description: "Drop-in proof badge for any site, email, or deck. Live-rendered against verifiedsxo.com.",
+    url: "https://verifiedsxo.com/badge-examples",
+    siteName: "VerifiedSXO",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "VerifiedSXO badges — drop-in proof",
+    description: "Inline · stamp · banner — one script, three variants.",
+  },
 }
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://verifiedsxo.com"
