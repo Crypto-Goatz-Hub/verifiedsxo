@@ -1,10 +1,9 @@
-import { renderOgCard, OG_RUNTIME, OG_SIZE, OG_CONTENT_TYPE } from "@/lib/og"
+import { renderOgCard } from "@/lib/og"
 
-export const runtime = OG_RUNTIME
+export const runtime = "edge"
 export const alt = "VerifiedSXO badge examples — one script, three variants, drop-in anywhere."
-export const size = OG_SIZE
-export const contentType = OG_CONTENT_TYPE
-
+export const size = { width: 1200, height: 630 }
+export const contentType = "image/png"
 export default async function OgImage() {
   return renderOgCard({
     eyebrow: "Trust in one tag",
