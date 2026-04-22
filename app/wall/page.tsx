@@ -265,7 +265,7 @@ export default async function WallPage({ searchParams }: Props) {
                           <div className="flex items-center gap-2">
                             <WallCopyButton text={c.claim_text} />
                             <Button asChild variant="ghost" size="sm">
-                              <Link href={`/verified/${c.id}`}>Open →</Link>
+                              <Link href={`/claim/${c.id}`}>Open →</Link>
                             </Button>
                           </div>
                         </div>
