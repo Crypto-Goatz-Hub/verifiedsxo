@@ -1,0 +1,51 @@
+name: Deploy to Vercel (zero build minutes)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: vercel-prod-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect package manager
+        id: pm
+        run: |
+          if   [ -f pnpm-lock.yaml ]; then echo "name=pnpm" >> "$GITHUB_OUTPUT"
+          elif [ -f yarn.lock ];      then echo "name=yarn" >> "$GITHUB_OUTPUT"
+          else                              echo "name=npm"  >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Enable corepack
+        run: |
+          corepack enable
+          if [ "${{ steps.pm.outputs.name }}" = "pnpm" ]; then corepack prepare pnpm@latest --activate; pnpm --version; fi
+          if [ "${{ steps.pm.outputs.name }}" = "yarn" ]; then corepack prepare yarn@stable --activate; yarn --version; fi
+      - run: npm install --global vercel@latest
+      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Install deps
+        run: |
+          case "${{ steps.pm.outputs.name }}" in
+            pnpm) pnpm install --no-frozen-lockfile ;;
+            yarn) yarn install --network-timeout 600000 ;;
+            npm)  npm install --legacy-peer-deps --no-audit --no-fund ;;
+          esac
+      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $DEPLOY_URL"
+      - name: Summary
+        run: |
+          echo "### ✅ Deployed (zero Vercel build minutes used)" >> "$GITHUB_STEP_SUMMARY"
+          echo "URL: ${{ steps.deploy.outputs.url }}"             >> "$GITHUB_STEP_SUMMARY"
+          echo "Package manager: \`${{ steps.pm.outputs.name }}\`" >> "$GITHUB_STEP_SUMMARY"
