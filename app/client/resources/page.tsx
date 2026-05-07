@@ -40,7 +40,7 @@ const RESOURCES = [
 
 export default async function ClientResourcesPage() {
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) redirect("/login?next=/client/resources")
 
   const admin = getSupabaseAdmin()

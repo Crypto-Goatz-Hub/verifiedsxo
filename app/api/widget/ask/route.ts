@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   // Check authentication — signed-in users skip the rate limit
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   const authenticated = !!user
 
   // Fingerprint — prefer cookie, fallback to hashed IP

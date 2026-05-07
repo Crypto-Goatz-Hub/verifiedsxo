@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   if (!cookieNonce || cookieNonce !== parsed.nonce) return errorRedirect(url, "nonce_mismatch")
 
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return errorRedirect(url, "not_signed_in")
 
   const admin = getSupabaseAdmin()

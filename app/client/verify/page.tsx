@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 
 export default async function VerifyPage() {
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) redirect("/login?next=/client/verify")
 
   const admin = getSupabaseAdmin()

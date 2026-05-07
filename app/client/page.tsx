@@ -15,7 +15,7 @@ interface Props { searchParams: Promise<{ gsc?: string; li?: string; reason?: st
 export default async function ClientDashboardPage({ searchParams }: Props) {
   const sp = await searchParams
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) redirect("/login?next=/client")
 
   const admin = getSupabaseAdmin()

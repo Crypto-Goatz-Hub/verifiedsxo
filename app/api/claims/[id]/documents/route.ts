@@ -36,7 +36,7 @@ interface ClaimAuth {
 
 async function authClaim(req: NextRequest, claimId: string): Promise<{ ok: true; ctx: ClaimAuth } | { ok: false; status: number; error: string }> {
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return { ok: false, status: 401, error: "unauthorised" }
 
   const admin = getSupabaseAdmin()

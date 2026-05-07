@@ -7,7 +7,7 @@ export const runtime = "nodejs"
 
 export async function GET(req: NextRequest) {
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) {
     const url = new URL("/login", req.url)
     url.searchParams.set("next", "/client")

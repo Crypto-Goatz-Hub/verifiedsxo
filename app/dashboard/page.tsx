@@ -19,7 +19,7 @@ interface Props { searchParams: Promise<{ membership?: string; upgraded?: string
 export default async function DashboardPage({ searchParams }: Props) {
   const sp = await searchParams
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) redirect("/login?next=/dashboard")
 
   const admin = getSupabaseAdmin()

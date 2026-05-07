@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) {
     const dest = new URL("/login", url.origin)
     dest.searchParams.set("next", `/api/stripe/checkout?plan=${planId}`)

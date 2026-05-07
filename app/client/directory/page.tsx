@@ -16,7 +16,7 @@ export default async function ClientDirectoryPage({ searchParams }: Props) {
   const q = (sp?.q || "").trim()
 
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) redirect("/login?next=/client/directory")
 
   const admin = getSupabaseAdmin()

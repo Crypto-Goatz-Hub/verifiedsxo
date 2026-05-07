@@ -21,7 +21,7 @@ function newToken(): string {
 
 export async function POST(req: NextRequest) {
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: "unauthorised" }, { status: 401 })
   if (!(await isAdmin(user.id, user.email))) return NextResponse.json({ error: "forbidden" }, { status: 403 })
 

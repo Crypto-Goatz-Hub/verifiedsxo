@@ -16,7 +16,7 @@ function fmtMoney(cents: number | null | undefined, currency = "usd"): string {
 
 export default async function AccountPage() {
   const supabase = await getSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) redirect("/login?next=/account")
 
   const admin = getSupabaseAdmin()
