@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AnimatedGridBackground } from "@/components/animated-grid-background"
+import { GoogleSignInButton } from "@/components/google-signin-button"
 import { Loader2, ArrowRight, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 
@@ -70,6 +71,7 @@ export default function SignupPage() {
             onSubmit={onSubmit}
             className="rounded-xl border border-border bg-card p-6 md:p-8 shadow-sm space-y-4"
           >
+            <GoogleSignInButton next="/dashboard" />
             <div>
               <label className="block text-sm font-medium mb-2">Agency name</label>
               <input
