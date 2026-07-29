@@ -45,7 +45,21 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between gap-4 text-xs text-muted-foreground">
+        <div className="mt-12 pt-8 border-t border-border/50">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">The 0n ecosystem — by RocketOpp</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <a href="https://rocketopp.com" className="hover:text-foreground transition-colors">RocketOpp — custom AI development</a>
+            <a href="https://www.0nmcp.com" className="hover:text-foreground transition-colors">0nMCP — AI orchestration</a>
+            <a href="https://0ncore.com" className="hover:text-foreground transition-colors">0nCore — AI command center</a>
+            <a href="https://www.0ntask.com" className="hover:text-foreground transition-colors">0nTask — AI task management</a>
+            <a href="https://www.cro9.com" className="hover:text-foreground transition-colors">CRO9 — conversion optimization</a>
+            <a href="https://web0n.com" className="hover:text-foreground transition-colors">web0n — AI website builder</a>
+            <a href="https://social0n.com" className="hover:text-foreground transition-colors">social0n — AI social content</a>
+            <a href="https://sxowebsite.com" className="hover:text-foreground transition-colors">SXO — search experience optimization</a>
+          </div>
+        </div>
+
+        <div className="mt-8 pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between gap-4 text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} RocketOpp LLC. All rights reserved.</span>
           <span>Fighting marketing misinformation since 2026.</span>
         </div>
