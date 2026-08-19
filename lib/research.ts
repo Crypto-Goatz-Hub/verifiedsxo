@@ -2,12 +2,12 @@
  * Claim Research Pipeline — Verify Engine v1 (0nMCP K-layer · `verify`)
  *
  * Flow:
- *   1. Entity extract      — Groq llama-3.1-8b-instant  (fast+cheap)
- *   2. Query plan          — Groq llama-3.1-8b-instant  (3–5 queries)
+ *   1. Entity extract      — Groq openai/gpt-oss-20b  (fast+cheap)
+ *   2. Query plan          — Groq openai/gpt-oss-20b  (3–5 queries)
  *   3. Web search          — Brave Search API (if key) → DuckDuckGo scrape
  *   4. Source fetch        — Top N URLs, strip HTML, trim
  *   5. Synthesis           — CRM Agent Studio KB (25y marketing corpus)
- *                            → Groq llama-3.3-70b-versatile fallback
+ *                            → Groq openai/gpt-oss-120b fallback
  *
  * Exposed via:
  *   • verifiedsxo: POST /api/claims/[id]/research
@@ -139,7 +139,7 @@ Rules:
 - "assertions" should be short (< 20 words each) and each must be independently verifiable.
 - Keep arrays small. Empty if not present.`
 
-  const r = await groq(prompt, "llama-3.1-8b-instant", { json: true, max_tokens: 500 })
+  const r = await groq(prompt, "openai/gpt-oss-20b", { json: true, max_tokens: 500 })
   const parsed = safeJson(r) as Partial<ExtractedEntities> | null
   if (!parsed) return emptyEntities(claim)
 
@@ -190,7 +190,7 @@ Rules:
 - If a client domain is present, include at least one "site:domain" query.
 - Don't ask questions; use keyword queries.`
 
-  const r = await groq(prompt, "llama-3.1-8b-instant", { json: true, max_tokens: 400 })
+  const r = await groq(prompt, "openai/gpt-oss-20b", { json: true, max_tokens: 400 })
   const parsed = safeJson(r) as { queries?: string[] } | null
   const qs = arr<string>(parsed?.queries).map((s) => String(s).trim()).filter(Boolean).slice(0, maxQueries)
 
@@ -386,7 +386,7 @@ Rules:
 
   // Tier 2 — Groq
   if (GROQ_KEY) {
-    const raw = await groq(prompt, "llama-3.3-70b-versatile", { json: true, max_tokens: 900 })
+    const raw = await groq(prompt, "openai/gpt-oss-120b", { json: true, max_tokens: 900 })
     const parsed = safeJson(raw)
     if (parsed) return hydrate(parsed, hits, "groq")
   }

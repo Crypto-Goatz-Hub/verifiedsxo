@@ -32,7 +32,7 @@ const STEPS = [
     icon: Brain,
     title: "Plausibility score",
     body: "You paste the exact claim — as written on LinkedIn, Twitter, your homepage. Our model weighs it against 25 years of marketing benchmarks and returns a 0–100% likelihood plus 3 reasons. Unauthenticated, free, 60 seconds.",
-    detail: "Runs through CRM Agent Studio (primary) → Groq llama-3.3-70b (fallback) → deterministic heuristic (last resort). Always returns a result.",
+    detail: "Runs through CRM Agent Studio (primary) → Groq openai/gpt-oss-120b (fallback) → deterministic heuristic (last resort). Always returns a result.",
   },
   {
     n: "02",

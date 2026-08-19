@@ -6,7 +6,7 @@
  * v1 extraction pipeline:
  *   - text/csv/json/txt content read up to 30KB each
  *   - other MIME types described by filename + user description only
- *   - downstream model: Groq llama-3.3-70b-versatile with response_format json
+ *   - downstream model: Groq openai/gpt-oss-120b with response_format json
  */
 
 import { getSupabaseAdmin } from "@/lib/supabase/server"
@@ -109,7 +109,7 @@ async function callGroq(user: string): Promise<ElevationResult | null> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         temperature: 0.2,
         response_format: { type: "json_object" },
         messages: [
@@ -130,7 +130,7 @@ async function callGroq(user: string): Promise<ElevationResult | null> {
       synthesis: String(parsed.synthesis || "").slice(0, 600),
       highlights: Array.isArray(parsed.highlights) ? parsed.highlights.map(String).slice(0, 5) : [],
       unresolved_gaps: Array.isArray(parsed.unresolved_gaps) ? parsed.unresolved_gaps.map(String).slice(0, 5) : [],
-      model: "groq/llama-3.3-70b",
+      model: "groq/openai/gpt-oss-120b",
     }
   } catch {
     return null
