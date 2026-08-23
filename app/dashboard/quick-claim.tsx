@@ -110,9 +110,9 @@ export function QuickClaim({ clients, unlimited, used, dailyLimit }: Props) {
             <strong>Daily free-tier limit hit.</strong>{" "}
             <Link href="/pricing" className="underline font-semibold">Upgrade to Pro</Link>{" "}
             or{" "}
-            <Link href="/api/stripe/checkout?plan=membership" className="underline font-semibold">
+            <a href="/api/stripe/checkout?plan=membership" className="underline font-semibold">
               activate the $8/mo membership
-            </Link>{" "}
+            </a>{" "}
             for unlimited claims. Resets at midnight UTC.
           </AlertDescription>
         </Alert>

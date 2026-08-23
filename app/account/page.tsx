@@ -61,11 +61,11 @@ export default async function AccountPage() {
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{agency.name}</h1>
                 <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
               </div>
-              <Link href="/api/stripe/portal">
+              <a href="/api/stripe/portal">
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <ExternalLink className="w-3.5 h-3.5" /> Manage billing
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
 
@@ -93,9 +93,9 @@ export default async function AccountPage() {
                   View profile
                 </Link>
               ) : (
-                <Link href="/api/stripe/checkout?plan=membership" className="inline-block mt-2 text-xs underline underline-offset-2">
+                <a href="/api/stripe/checkout?plan=membership" className="inline-block mt-2 text-xs underline underline-offset-2">
                   Activate ($8/mo)
-                </Link>
+                </a>
               )}
             </div>
 

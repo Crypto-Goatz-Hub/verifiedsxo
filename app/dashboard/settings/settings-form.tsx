@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -201,7 +200,7 @@ export function SettingsForm({ agencyId, initial, canPublish, publicSlug, domain
               <Switch id="public-toggle" checked={publicEnabled} onCheckedChange={setPublicEnabled} />
             ) : (
               <Button asChild size="sm" className="bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:opacity-90">
-                <Link href="/api/stripe/checkout?plan=membership">Activate</Link>
+                <a href="/api/stripe/checkout?plan=membership">Activate</a>
               </Button>
             )}
           </div>

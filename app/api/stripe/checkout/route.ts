@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getStripe, PLANS, MEMBERSHIP, type PlanId } from "@/lib/stripe"
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabase/server"
+import { guardCheckoutGet } from "@/lib/checkout-guard"
 
 export const runtime = "nodejs"
+
+/** Next implements HEAD by running GET. Answer it here so a probe buys nothing. */
+export async function HEAD() {
+  return new NextResponse(null, { status: 204 })
+}
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
   const planId = (url.searchParams.get("plan") || "pro") as PlanId
+
+  // next/link prefetches on viewport entry, and this route handler is linked
+  // from five places in the signed-in dashboard. A prefetch here is a live
+  // subscription session carrying the member's own email — see checkout-guard.
+  const verdict = guardCheckoutGet(req)
+  if (!verdict.human) {
+    console.log(`[checkout-guard] no session minted plan=${planId} reason=${verdict.reason}`)
+    const dest = new URL("/pricing", url.origin)
+    return NextResponse.redirect(dest, { status: 303, headers: { "x-checkout-guard": verdict.reason } })
+  }
 
   const plan = planId === "membership" ? MEMBERSHIP : PLANS.find((p) => p.id === planId)
   if (!plan || !plan.priceId) {

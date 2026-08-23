@@ -172,11 +172,11 @@ export default async function DashboardPage({ searchParams }: Props) {
                 Public page · LinkedIn badge · click-to-copy embeds · certificate flow
               </div>
             </div>
-            <Link href="/api/stripe/checkout?plan=membership">
+            <a href="/api/stripe/checkout?plan=membership">
               <Button size="sm" className="bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:opacity-90">
                 Activate
               </Button>
-            </Link>
+            </a>
           </div>
         )}
       </div>

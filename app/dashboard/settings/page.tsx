@@ -71,9 +71,9 @@ export default async function AgencySettingsPage() {
               {agency.membership_status === "active" ? "Active" : "Inactive"}
             </div>
             {agency.membership_status !== "active" ? (
-              <Link href="/api/stripe/checkout?plan=membership" className="text-xs underline underline-offset-2 text-violet-500 hover:text-cyan-500">
+              <a href="/api/stripe/checkout?plan=membership" className="text-xs underline underline-offset-2 text-violet-500 hover:text-cyan-500">
                 Activate — $8/mo
-              </Link>
+              </a>
             ) : (
               <Link href={`/u/${agency.slug}`} className="text-xs underline underline-offset-2 text-muted-foreground hover:text-foreground">
                 verifiedsxo.com/u/{agency.slug}
