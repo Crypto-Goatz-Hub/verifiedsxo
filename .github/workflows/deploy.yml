@@ -22,14 +22,25 @@ jobs:
           elif [ -f yarn.lock ];      then echo "name=yarn" >> "$GITHUB_OUTPUT"
           else                              echo "name=npm"  >> "$GITHUB_OUTPUT"
           fi
+      # Node 22, not 20. pnpm 11 dropped Node 20 support, so the day it shipped
+      # `corepack prepare pnpm@latest` below started dying with
+      # `ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite`. Nothing in this repo changed;
+      # `latest` moved underneath a pinned Node, and this repo silently stopped
+      # deploying on 2026-08-07 and stayed that way for 16 days. Every push
+      # since then looked shipped and was not.
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with: { node-version: 22 }
       - name: Enable corepack
         run: |
           corepack enable
-          if [ "${{ steps.pm.outputs.name }}" = "pnpm" ]; then corepack prepare pnpm@latest --activate; pnpm --version; fi
+          # PINNED. `pnpm@latest` inside a deploy route is an outage with a
+          # delay fuse: it breaks on a day nobody touched the repo, and the only
+          # symptom is that shipping quietly stops. A major is not a pin either.
+          if [ "${{ steps.pm.outputs.name }}" = "pnpm" ]; then corepack prepare pnpm@10.15.0 --activate; pnpm --version; fi
           if [ "${{ steps.pm.outputs.name }}" = "yarn" ]; then corepack prepare yarn@stable --activate; yarn --version; fi
-      - run: npm install --global vercel@latest
+      # PINNED EXACTLY, not to a major. vercel 59.x broke `--prebuilt`, which is
+      # the flag this whole workflow depends on, and cost 0nmcp.com 21 days.
+      - run: npm install --global vercel@59.1.4
       - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Install deps
         run: |
