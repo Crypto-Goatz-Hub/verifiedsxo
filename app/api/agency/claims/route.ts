@@ -93,6 +93,14 @@ export async function POST(req: NextRequest) {
 
   // -------- Rate limit ---------------------------------------------------
   const limit = await checkAgencyDailyClaimLimit(agencyId!)
+  // See app/api/claims/route.ts — a failed read must not be published as a cap.
+  if (limit.reason === "limit_check_failed") {
+    console.error("[agency/claims] daily-limit check failed:", limit.error)
+    return NextResponse.json(
+      { error: "limit_check_unavailable", message: "Could not verify this agency's daily claim allowance. Please try again shortly." },
+      { status: 503 }
+    )
+  }
   if (!limit.allowed) {
     return NextResponse.json(
       {

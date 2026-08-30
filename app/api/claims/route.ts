@@ -40,6 +40,15 @@ export async function POST(req: NextRequest) {
   // Agency-scoped daily limit: free tier → 1/day; paid plan OR active
   // public-profile membership → unlimited.
   const limit = await checkAgencyDailyClaimLimit(client.agency_id)
+  // A gate that could not read is not a gate that said no. Answering 429 here
+  // would publish "you hit your daily limit" to someone who did not.
+  if (limit.reason === "limit_check_failed") {
+    console.error("[claims] daily-limit check failed:", limit.error)
+    return NextResponse.json(
+      { error: "limit_check_unavailable", message: "Could not verify your daily claim allowance. Please try again shortly." },
+      { status: 503 }
+    )
+  }
   if (!limit.allowed) {
     return NextResponse.json(
       {
